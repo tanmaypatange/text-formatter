@@ -1,352 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-   <meta charset="UTF-8">
-   <title>Text Utility Tool</title>
-   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   
-   <style>
-       html, body {
-           margin: 0;
-           padding: 0;
-           height: 100%;
-           font-family: Arial, sans-serif;
-       }
-       .container {
-           display: flex;
-           flex-direction: column;
-           height: 100vh;
-           max-width: 1000px;
-           margin: 0 auto;
-           padding: 20px;
-           box-sizing: border-box;
-       }
-       .text-section {
-           display: flex;
-           flex-direction: column;
-           margin-bottom: 20px;
-           position: relative;
-       }
-       .text-label {
-           margin-bottom: 10px;
-           font-weight: bold;
-           color: #333;
-       }
-       textarea {
-           width: 100%;
-           resize: vertical;
-           min-height: 200px;
-           padding: 15px;
-           font-size: 16px;
-           border: 2px solid #e0e0e0;
-           border-radius: 8px;
-           outline: none;
-           margin-bottom: 10px;
-           box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-       }
-       .comparison-overlay {
-           position: absolute;
-           top: 55px;
-           left: 15px;
-           right: 15px;
-           bottom: 10px;
-           pointer-events: none;
-           z-index: 10;
-       }
-       .comparison-word {
-           position: absolute;
-           background-color: transparent;
-           transition: background-color 0.3s ease;
-       }
-       .comparison-word.added {
-           background-color: #90EE90;
-       }
-       .comparison-word.removed {
-           background-color: #FFB6C1;
-       }
-       .action-buttons {
-           display: flex;
-           gap: 10px;
-           margin-bottom: 20px;
-           align-items: center;
-       }
-       .counter {
-           color: #666;
-           font-size: 14px;
-           margin-right: auto;
-       }
-       .btn {
-           padding: 8px 15px;
-           border: none;
-           border-radius: 4px;
-           cursor: pointer;
-           transition: background-color 0.3s ease;
-           background-color: #2196F3;
-           color: white;
-       }
-       .btn:hover:not(.btn-disabled) {
-           background-color: #1E88E5;
-       }
-       .btn-disabled {
-           background-color: #cccccc !important;
-           cursor: not-allowed;
-           opacity: 0.6;
-       }
-       .btn-secondary {
-           background-color: #4CAF50;
-       }
-       .btn-secondary:hover {
-           background-color: #45a049;
-       }
-       .confirmation {
-           margin-left: 10px;
-           font-size: 14px;
-           opacity: 0;
-           transition: opacity 0.3s ease;
-       }
-       .confirmation-success {
-           color: #4CAF50;
-       }
-       .confirmation-error {
-           color: red;
-       }
-   </style>
+    <meta charset="UTF-8">
+    <title>Text Utility Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .text-section {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .text-label {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            resize: vertical;
+            min-height: 200px;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .comparison-overlay {
+            position: absolute;
+            top: 55px;
+            left: 15px;
+            right: 15px;
+            bottom: 10px;
+            pointer-events: none;
+            z-index: 10;
+            display: none;
+        }
+        .comparison-word {
+            position: absolute;
+            background-color: transparent;
+            transition: background-color 0.3s ease;
+        }
+        .comparison-word.added {
+            background-color: #90EE90;
+        }
+        .comparison-word.removed {
+            background-color: #FFB6C1;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .counter {
+            color: #666;
+            font-size: 14px;
+            margin-right: auto;
+        }
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            background-color: #2196F3;
+            color: white;
+        }
+        .btn:hover:not(.btn-disabled) {
+            background-color: #1E88E5;
+        }
+        .btn-disabled {
+            background-color: #cccccc !important;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .btn-secondary {
+            background-color: #4CAF50;
+        }
+        .btn-secondary:hover {
+            background-color: #45a049;
+        }
+        .confirmation {
+            margin-left: 10px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .confirmation-success {
+            color: #4CAF50;
+        }
+        .confirmation-error {
+            color: red;
+        }
+    </style>
 </head>
 <body>
-   <div class="container">
-       <div class="text-section">
-           <div class="text-label">Input Your Text</div>
-           <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
-           <div class="comparison-overlay" id="inputComparisonOverlay"></div>
-           <div class="action-buttons">
-               <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
-               <button id="clearButton" class="btn">Clear Text</button>
-           </div>
-       </div>
+    <div class="container">
+        <div class="text-section">
+            <div class="text-label">Input Your Text</div>
+            <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
+            <div class="comparison-overlay" id="inputComparisonOverlay"></div>
+            <div class="action-buttons">
+                <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
+                <button id="clearButton" class="btn">Clear Text</button>
+            </div>
+        </div>
 
-       <div class="text-section">
-           <div class="text-label">Output Text</div>
-           <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically."></textarea>
-           <div class="comparison-overlay" id="outputComparisonOverlay"></div>
-           <div class="action-buttons">
-               <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
-               <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
-               <button id="revertButton" class="btn btn-secondary btn-disabled" disabled>Revert</button>
-               <button id="removeContractionsButton" class="btn btn-secondary btn-disabled" disabled>Remove Contractions</button>
-               <button id="addContractionsButton" class="btn btn-secondary btn-disabled" disabled>Add Contractions</button>
-               <button id="compareButton" class="btn btn-disabled" disabled>Compare Text</button>
-               <button id="resetCompareButton" class="btn btn-disabled" disabled>Reset Comparison</button>
-               <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
-               <span id="processConfirmation" class="confirmation confirmation-success"></span>
-           </div>
-       </div>
-   </div>
+        <div class="text-section">
+            <div class="text-label">Output Text</div>
+            <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically."></textarea>
+            <div class="comparison-overlay" id="outputComparisonOverlay"></div>
+            <div class="action-buttons">
+                <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
+                <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
+                <button id="revertButton" class="btn btn-secondary btn-disabled" disabled>Revert</button>
+                <button id="removeContractionsButton" class="btn btn-secondary btn-disabled" disabled>Remove Contractions</button>
+                <button id="addContractionsButton" class="btn btn-secondary btn-disabled" disabled>Add Contractions</button>
+                <button id="compareButton" class="btn btn-disabled" disabled>Compare Text</button>
+                <button id="resetCompareButton" class="btn btn-disabled" disabled>Reset Comparison</button>
+                <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
+                <span id="processConfirmation" class="confirmation confirmation-success"></span>
+            </div>
+        </div>
+    </div>
 
-   <script>
-       const inputTextArea = document.getElementById('inputTextArea');
-       const outputTextArea = document.getElementById('outputTextArea');
-       const inputComparisonOverlay = document.getElementById('inputComparisonOverlay');
-       const outputComparisonOverlay = document.getElementById('outputComparisonOverlay');
-       const inputCounter = document.getElementById('inputCounter');
-       const outputCounter = document.getElementById('outputCounter');
-       const clearButton = document.getElementById('clearButton');
-       const copyOutputButton = document.getElementById('copyOutputButton');
-       const revertButton = document.getElementById('revertButton');
-       const removeContractionsButton = document.getElementById('removeContractionsButton');
-       const addContractionsButton = document.getElementById('addContractionsButton');
-       const compareButton = document.getElementById('compareButton');
-       const resetCompareButton = document.getElementById('resetCompareButton');
-       const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
-       const processConfirmation = document.getElementById('processConfirmation');
+    <script>
+        const inputTextArea = document.getElementById('inputTextArea');
+        const outputTextArea = document.getElementById('outputTextArea');
+        const inputComparisonOverlay = document.getElementById('inputComparisonOverlay');
+        const outputComparisonOverlay = document.getElementById('outputComparisonOverlay');
+        const inputCounter = document.getElementById('inputCounter');
+        const outputCounter = document.getElementById('outputCounter');
+        const clearButton = document.getElementById('clearButton');
+        const copyOutputButton = document.getElementById('copyOutputButton');
+        const revertButton = document.getElementById('revertButton');
+        const removeContractionsButton = document.getElementById('removeContractionsButton');
+        const addContractionsButton = document.getElementById('addContractionsButton');
+        const compareButton = document.getElementById('compareButton');
+        const resetCompareButton = document.getElementById('resetCompareButton');
+        const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
+        const processConfirmation = document.getElementById('processConfirmation');
 
-       const contractions = {
-           "are not": "aren't", "cannot": "can't", "could not": "couldn't",
-           "did not": "didn't", "does not": "doesn't", "do not": "don't",
-           "had not": "hadn't", "has not": "hasn't", "have not": "haven't",
-           "he would": "he'd", "he will": "he'll", "he is": "he's",
-           "i would": "i'd", "i will": "i'll", "i am": "i'm", "i have": "i've",
-           "is not": "isn't", "it is": "it's", "let us": "let's",
-           "she would": "she'd", "she will": "she'll", "she is": "she's",
-           "should not": "shouldn't", "that is": "that's", "there is": "there's",
-           "they would": "they'd", "they will": "they'll", "they are": "they're",
-           "they have": "they've", "was not": "wasn't", "we would": "we'd",
-           "we are": "we're", "were not": "weren't", "what will": "what'll",
-           "what are": "what're", "what is": "what's", "what have": "what've",
-           "where is": "where's", "who would": "who'd", "who will": "who'll",
-           "who are": "who're", "who is": "who's", "who have": "who've",
-           "will not": "won't", "would not": "wouldn't", "you would": "you'd",
-           "you will": "you'll", "you are": "you're", "you have": "you've"
-       };
+        const contractions = {
+            "are not": "aren't", "cannot": "can't", "could not": "couldn't",
+            "did not": "didn't", "does not": "doesn't", "do not": "don't",
+            "had not": "hadn't", "has not": "hasn't", "have not": "haven't",
+            "he would": "he'd", "he will": "he'll", "he is": "he's",
+            "i would": "i'd", "i will": "i'll", "i am": "i'm", "i have": "i've",
+            "is not": "isn't", "it is": "it's", "let us": "let's",
+            "she would": "she'd", "she will": "she'll", "she is": "she's",
+            "should not": "shouldn't", "that is": "that's", "there is": "there's",
+            "they would": "they'd", "they will": "they'll", "they are": "they're",
+            "they have": "they've", "was not": "wasn't", "we would": "we'd",
+            "we are": "we're", "were not": "weren't", "what will": "what'll",
+            "what are": "what're", "what is": "what's", "what have": "what've",
+            "where is": "where's", "who would": "who'd", "who will": "who'll",
+            "who are": "who're", "who is": "who's", "who have": "who've",
+            "will not": "won't", "would not": "wouldn't", "you would": "you'd",
+            "you will": "you'll", "you are": "you're", "you have": "you've"
+        };
 
-       function updateCounter(textArea, counterElement) {
-           const plainText = textArea.value;
-           const charCount = plainText.length;
-           const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
-           counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
-       }
+        function updateCounter(textArea, counterElement) {
+            const plainText = textArea.value;
+            const charCount = plainText.length;
+            const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+            counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
+        }
 
-       function showConfirmation(element, message = '', isError = false) {
-           element.textContent = message;
-           element.style.opacity = '1';
-           element.classList.toggle('confirmation-error', isError);
-           element.classList.toggle('confirmation-success', !isError);
-           setTimeout(() => {
-               element.style.opacity = '0';
-               element.textContent = '';
-           }, 2000);
-       }
+        function showConfirmation(element, message = '', isError = false) {
+            element.textContent = message;
+            element.style.opacity = '1';
+            element.classList.toggle('confirmation-error', isError);
+            element.classList.toggle('confirmation-success', !isError);
+            setTimeout(() => {
+                element.style.opacity = '0';
+                element.textContent = '';
+            }, 2000);
+        }
 
-       function checkButtons() {
-           const inputHasContent = inputTextArea.value.trim() !== '';
+        function checkButtons() {
+            const inputHasContent = inputTextArea.value.trim() !== '';
 
-           [copyOutputButton, revertButton, removeContractionsButton, 
-            addContractionsButton, compareButton].forEach(button => {
-               button.disabled = !inputHasContent;
-               button.classList.toggle('btn-disabled', !inputHasContent);
-           });
-       }
+            [copyOutputButton, revertButton, removeContractionsButton, 
+             addContractionsButton, compareButton].forEach(button => {
+                button.disabled = !inputHasContent;
+                button.classList.toggle('btn-disabled', !inputHasContent);
+            });
+        }
 
-       function copyText(textArea, confirmationElement) {
-           if (textArea.value.trim() === '') {
-               showConfirmation(confirmationElement, 'Nothing to copy', true);
-               return;
-           }
-           const tempTextArea = document.createElement('textarea');
-           tempTextArea.value = textArea.value;
-           document.body.appendChild(tempTextArea);
-           tempTextArea.select();
-           document.execCommand('copy');
-           document.body.removeChild(tempTextArea);
-           showConfirmation(confirmationElement, 'Copied!');
-       }
+        function copyText(textArea, confirmationElement) {
+            if (textArea.value.trim() === '') {
+                showConfirmation(confirmationElement, 'Nothing to copy', true);
+                return;
+            }
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textArea.value;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            showConfirmation(confirmationElement, 'Copied!');
+        }
 
-       function removeContractionsFromText(text) {
-           return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
-               const lowerMatch = match.toLowerCase();
-               const replacement = Object.keys(contractions).find(key => 
-                   contractions[key].toLowerCase() === lowerMatch
-               );
-               
-               return replacement ? 
-                   (match[0] === match[0].toUpperCase() 
-                       ? replacement[0].toUpperCase() + replacement.slice(1)
-                       : replacement) : 
-                   match;
-           });
-       }
+        function removeContractionsFromText(text) {
+            return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
+                const lowerMatch = match.toLowerCase();
+                const replacement = Object.keys(contractions).find(key => 
+                    contractions[key].toLowerCase() === lowerMatch
+                );
+                
+                return replacement ? 
+                    (match[0] === match[0].toUpperCase() 
+                        ? replacement[0].toUpperCase() + replacement.slice(1)
+                        : replacement) : 
+                    match;
+            });
+        }
 
-       function addContractionsToText(text) {
-           let processedText = text;
-           Object.entries(contractions).forEach(([expanded, contracted]) => {
-               const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
-               processedText = processedText.replace(regex, (match) => {
-                   return match[0] === match[0].toUpperCase() 
-                       ? contracted[0].toUpperCase() + contracted.slice(1)
-                       : contracted;
-               });
-           });
-           return processedText;
-       }
+        function addContractionsToText(text) {
+            let processedText = text;
+            Object.entries(contractions).forEach(([expanded, contracted]) => {
+                const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
+                processedText = processedText.replace(regex, (match) => {
+                    return match[0] === match[0].toUpperCase() 
+                        ? contracted[0].toUpperCase() + contracted.slice(1)
+                        : contracted;
+                });
+            });
+            return processedText;
+        }
 
-       function compareTexts(inputText, outputText) {
-           const inputWords = inputText.split(/\s+/);
-           const outputWords = outputText.split(/\s+/);
-           
-           return {
-               addedWords: outputWords.filter(word => !inputWords.includes(word)),
-               removedWords: inputWords.filter(word => !outputWords.includes(word))
-           };
-       }
+        function compareTexts(inputText, outputText) {
+            const inputWords = inputText.split(/\s+/);
+            const outputWords = outputText.split(/\s+/);
+            
+            return {
+                addedWords: outputWords.filter(word => !inputWords.includes(word)),
+                removedWords: inputWords.filter(word => !outputWords.includes(word))
+            };
+        }
 
-       function highlightComparison(inputText, outputText) {
-           const { addedWords, removedWords } = compareTexts(inputText, outputText);
-           
-           inputComparisonOverlay.innerHTML = '';
-           outputComparisonOverlay.innerHTML = '';
+        function highlightComparison(inputText, outputText) {
+            const { addedWords, removedWords } = compareTexts(inputText, outputText);
+            
+            inputComparisonOverlay.innerHTML = '';
+            outputComparisonOverlay.innerHTML = '';
 
-           function createWordHighlights(textArea, overlay, words, className) {
-               const lines = textArea.value.split('\n');
-               let currentTop = 0;
-               
-               lines.forEach((line) => {
-                   const lineWords = line.split(/\s+/);
-                   let currentLeft = 0;
+            function createWordHighlights(textArea, overlay, words, className) {
+                const lines = textArea.value.split('\n');
+                let currentTop = 0;
+                
+                lines.forEach((line) => {
+                    const lineWords = line.split(/\s+/);
+                    let currentLeft = 0;
 
-                   lineWords.forEach((word) => {
-                       const wordSpan = document.createElement('span');
-                       wordSpan.textContent = word + ' ';
-                       wordSpan.style.position = 'absolute';
-                       wordSpan.style.top = `${currentTop}px`;
-                       wordSpan.style.left = `${currentLeft}px`;
-                       
-                       if (words.includes(word)) {
-                           wordSpan.classList.add('comparison-word', className);
-                       }
+                    lineWords.forEach((word) => {
+                        const wordSpan = document.createElement('span');
+                        wordSpan.textContent = word + ' ';
+                        wordSpan.style.position = 'absolute';
+                        wordSpan.style.top = `${currentTop}px`;
+                        wordSpan.style.left = `${currentLeft}px`;
+                        
+                        if (words.includes(word)) {
+                            wordSpan.classList.add('comparison-word', className);
+                        }
 
-                       overlay.appendChild(wordSpan);
+                        overlay.appendChild(wordSpan);
 
-                       currentLeft += (word.length * 10);
-                   });
+                        currentLeft += (word.length * 10);
+                    });
 
-                   currentTop += 25;
-               });
-           }
+                    currentTop += 25;
+                });
+            }
 
-           createWordHighlights(outputTextArea, outputComparisonOverlay, addedWords, 'added');
-           createWordHighlights(inputTextArea, inputComparisonOverlay, removedWords, 'removed');
+            createWordHighlights(outputTextArea, outputComparisonOverlay, addedWords, 'added');
+            createWordHighlights(inputTextArea, inputComparisonOverlay, removedWords, 'removed');
 
-           resetCompareButton.disabled = false;
-           resetCompareButton.classList.remove('btn-disabled');
-       }
+            inputComparisonOverlay.style.display = 'block';
+            outputComparisonOverlay.style.display = 'block';
 
-       inputTextArea.addEventListener('input', () => {
-           outputTextArea.value = inputTextArea.value;
-           updateCounter(inputTextArea, inputCounter);
-           updateCounter(outputTextArea, outputCounter);
-           checkButtons();
-       });
+            resetCompareButton.disabled = false;
+            resetCompareButton.classList.remove('btn-disabled');
+        }
 
-       clearButton.addEventListener('click', () => {
-           inputTextArea.value = '';
-           outputTextArea.value = '';
-           updateCounter(inputTextArea, inputCounter);
-           updateCounter(outputTextArea, outputCounter);
-           checkButtons();
-       });
+        function resetComparison() {
+            inputComparisonOverlay.innerHTML = '';
+            outputComparisonOverlay.innerHTML = '';
+            inputComparisonOverlay.style.display = 'none';
+            outputComparisonOverlay.style.display = 'none';
+            resetCompareButton.disabled = true;
+            resetCompareButton.classList.add('btn-disabled');
+        }
 
-       copyOutputButton.addEventListener('click', () => {
-           copyText(outputTextArea, outputCopyConfirmation);
-       });
+        inputTextArea.addEventListener('input', () => {
+            outputTextArea.value = inputTextArea.value;
+            updateCounter(inputTextArea, inputCounter);
+            updateCounter(outputTextArea, outputCounter);
+            checkButtons();
+        });
 
-       revertButton.addEventListener('click', () => {
-           outputTextArea.value = inputTextArea.value;
-           updateCounter(outputTextArea, outputCounter);
-       });
+        clearButton.addEventListener('click', () => {
+            inputTextArea.value = '';
+            outputTextArea.value = '';
+            updateCounter(inputTextArea, inputCounter);
+            updateCounter(outputTextArea, outputCounter);
+            checkButtons();
+            resetComparison();
+        });
 
-       removeContractionsButton.addEventListener('click', () => {
-           outputTextArea.value = removeContractionsFromText(outputTextArea.value);
-           updateCounter(outputTextArea, outputCounter);
-           showConfirmation(processConfirmation, 'Contractions Removed!');
-       });
+        copyOutputButton.addEventListener('click', () => {
+            copyText(outputTextArea, outputCopyConfirmation);
+        });
 
-       addContractionsButton.addEventListener('click', () => {
-           outputTextArea.value = addContractionsToText(outputTextArea.value);
-           updateCounter(outputTextArea, outputCounter);
-           showConfirmation(processConfirmation, 'Contractions Added!');
-       });
+        revertButton.addEventListener('click', () => {
+            outputTextArea.value = inputTextArea.value;
+            updateCounter(outputTextArea, outputCounter);
+            resetComparison();
+        });
 
-       compareButton.addEventListener('click', () => {
-           highlightComparison(inputTextArea.value, outputTextArea.value);
-       });
+        removeContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = removeContractionsFromText(outputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation, 'Contractions Removed!');
+            resetComparison();
+        });
 
-       resetCompareButton.addEventListener('click', () => {
-           inputComparisonOverlay.innerHTML = '';
-           outputComparisonOverlay.innerHTML = '';
-           resetCompareButton.disabled = true;
-           resetCompareButton.classList.add('btn-disabled');
-       });
+        addContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = addContractionsToText(outputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation, 'Contractions Added!');
+            resetComparison();
+        });
 
-       checkButtons();
-   </script>
+        compareButton.addEventListener('click', () => {
+            highlightComparison(inputTextArea.value, outputTextArea.value);
+        });
+
+        resetCompareButton.addEventListener('click', () => {
+            resetComparison();
+        });
+
+        checkButtons();
+    </script>
 </body>
 </html>
