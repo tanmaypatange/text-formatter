@@ -195,13 +195,10 @@
         }
 
         function removeContractionsFromText(text) {
-            return text.split(/\b/).map(word => {
-                const lowerWord = word.toLowerCase();
-                return contractions[lowerWord] ? 
-                    (word === lowerWord ? contractions[lowerWord] : 
-                    contractions[lowerWord][0].toUpperCase() + contractions[lowerWord].slice(1)) : 
-                    word;
-            }).join('');
+            return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
+                const lowerMatch = match.toLowerCase();
+                return contractions[lowerMatch] || match;
+            });
         }
 
         // Event Listeners
