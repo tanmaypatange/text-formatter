@@ -253,15 +253,15 @@
             const inputWords = inputText.split(/\s+/);
             const outputWords = outputText.split(/\s+/);
             
-            return {
-                addedWords: outputWords.filter(word => !inputWords.includes(word)),
-                removedWords: inputWords.filter(word => !outputWords.includes(word))
-            };
+            const addedWords = outputWords.filter(word => !inputWords.includes(word));
+            const removedWords = inputWords.filter(word => !outputWords.includes(word));
+
+            return { addedWords, removedWords };
         }
 
         function highlightComparison(inputText, outputText) {
             const { addedWords, removedWords } = compareTexts(inputText, outputText);
-            
+
             inputComparisonOverlay.innerHTML = '';
             outputComparisonOverlay.innerHTML = '';
 
@@ -293,8 +293,8 @@
                 });
             }
 
-            createWordHighlights(outputTextArea, outputComparisonOverlay, addedWords, 'added');
             createWordHighlights(inputTextArea, inputComparisonOverlay, removedWords, 'removed');
+            createWordHighlights(outputTextArea, outputComparisonOverlay, addedWords, 'added');
 
             inputComparisonOverlay.style.display = 'block';
             outputComparisonOverlay.style.display = 'block';
