@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Text Editor</title>
+    <title>Text Utility Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- PDF Library -->
@@ -19,15 +19,25 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
             box-sizing: border-box;
         }
+        .text-section {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        .text-label {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #333;
+        }
         textarea {
-            flex-grow: 1;
             width: 100%;
             resize: vertical;
+            min-height: 200px;
             padding: 15px;
             font-size: 16px;
             border: 2px solid #e0e0e0;
@@ -36,20 +46,14 @@
             margin-bottom: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .bottom-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        #counter {
-            padding: 10px;
-            font-size: 16px;
-            color: #666;
-        }
         .action-buttons {
             display: flex;
             gap: 10px;
-            align-items: center;
+            margin-bottom: 20px;
+        }
+        .counter {
+            color: #666;
+            font-size: 14px;
         }
         .btn {
             padding: 8px 15px;
@@ -63,6 +67,12 @@
         .btn:hover {
             background-color: #1E88E5;
         }
+        .btn-secondary {
+            background-color: #4CAF50;
+        }
+        .btn-secondary:hover {
+            background-color: #45a049;
+        }
         #copyConfirmation {
             color: #4CAF50;
             margin-left: 10px;
@@ -74,81 +84,174 @@
 </head>
 <body>
     <div class="container">
-        <textarea id="plainTextArea" placeholder="Paste your text here."></textarea>
-        <div class="bottom-row">
-            <div id="counter">Characters: 0 | Words: 0</div>
+        <!-- Input Section -->
+        <div class="text-section">
+            <div class="text-label">Input Your Text</div>
+            <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
             <div class="action-buttons">
-                <button id="copyButton" class="btn">Copy Text</button>
-                <button id="clearButton" class="btn">Clear Text</button>
+                <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
+                <button id="copyInputButton" class="btn">Copy Text</button>
+                <button id="clearInputButton" class="btn">Clear Text</button>
+                <button id="removeContractionsButton" class="btn btn-secondary">Remove Contractions</button>
+            </div>
+        </div>
+
+        <!-- Output Section -->
+        <div class="text-section">
+            <div class="text-label">Output Text</div>
+            <textarea id="outputTextArea" readonly placeholder="Processed text will appear here."></textarea>
+            <div class="action-buttons">
+                <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
+                <button id="copyOutputButton" class="btn">Copy Text</button>
+                <button id="clearOutputButton" class="btn">Clear Text</button>
                 <button id="txtButton" class="btn">Download TXT</button>
                 <button id="pdfButton" class="btn">Download PDF</button>
-                <span id="copyConfirmation">Copied!</span>
             </div>
         </div>
     </div>
 
     <script>
-        const textarea = document.getElementById('plainTextArea');
-        const counter = document.getElementById('counter');
-        const copyButton = document.getElementById('copyButton');
-        const clearButton = document.getElementById('clearButton');
+        // DOM Elements
+        const inputTextArea = document.getElementById('inputTextArea');
+        const outputTextArea = document.getElementById('outputTextArea');
+        const inputCounter = document.getElementById('inputCounter');
+        const outputCounter = document.getElementById('outputCounter');
+        const copyInputButton = document.getElementById('copyInputButton');
+        const clearInputButton = document.getElementById('clearInputButton');
+        const copyOutputButton = document.getElementById('copyOutputButton');
+        const clearOutputButton = document.getElementById('clearOutputButton');
+        const removeContractionsButton = document.getElementById('removeContractionsButton');
         const txtButton = document.getElementById('txtButton');
         const pdfButton = document.getElementById('pdfButton');
-        const copyConfirmation = document.getElementById('copyConfirmation');
 
-        // Text counter functionality
-        textarea.addEventListener('input', function() {
-            const plainText = this.value;
+        // Contraction Mapping
+        const contractions = {
+            "aren't": "are not",
+            "can't": "cannot",
+            "couldn't": "could not",
+            "didn't": "did not",
+            "doesn't": "does not",
+            "don't": "do not",
+            "hadn't": "had not",
+            "hasn't": "has not",
+            "haven't": "have not",
+            "he'd": "he would",
+            "he'll": "he will",
+            "he's": "he is",
+            "i'd": "i would",
+            "i'll": "i will",
+            "i'm": "i am",
+            "i've": "i have",
+            "isn't": "is not",
+            "it's": "it is",
+            "let's": "let us",
+            "she'd": "she would",
+            "she'll": "she will",
+            "she's": "she is",
+            "shouldn't": "should not",
+            "that's": "that is",
+            "there's": "there is",
+            "they'd": "they would",
+            "they'll": "they will",
+            "they're": "they are",
+            "they've": "they have",
+            "wasn't": "was not",
+            "we'd": "we would",
+            "we're": "we are",
+            "weren't": "were not",
+            "what'll": "what will",
+            "what're": "what are",
+            "what's": "what is",
+            "what've": "what have",
+            "where's": "where is",
+            "who'd": "who would",
+            "who'll": "who will",
+            "who're": "who are",
+            "who's": "who is",
+            "who've": "who have",
+            "won't": "will not",
+            "wouldn't": "would not",
+            "you'd": "you would",
+            "you'll": "you will",
+            "you're": "you are",
+            "you've": "you have"
+        };
+
+        // Utility Functions
+        function updateCounter(textArea, counterElement) {
+            const plainText = textArea.value;
             const charCount = plainText.length;
             const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+            counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
+        }
 
-            counter.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
-        });
-
-        // Copy to clipboard without selecting text
-        copyButton.addEventListener('click', function() {
-            // Create a temporary textarea to copy text
+        function copyText(textArea) {
             const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = textarea.value;
+            tempTextArea.value = textArea.value;
             document.body.appendChild(tempTextArea);
-            
-            // Select and copy
             tempTextArea.select();
             document.execCommand('copy');
-            
-            // Remove temporary textarea
             document.body.removeChild(tempTextArea);
-            
-            // Show copy confirmation
-            copyConfirmation.style.opacity = '1';
-            setTimeout(() => {
-                copyConfirmation.style.opacity = '0';
-            }, 2000);
+        }
+
+        function removeContractionsFromText(text) {
+            return text.split(/\b/).map(word => {
+                const lowerWord = word.toLowerCase();
+                return contractions[lowerWord] ? 
+                    (word === lowerWord ? contractions[lowerWord] : 
+                    contractions[lowerWord][0].toUpperCase() + contractions[lowerWord].slice(1)) : 
+                    word;
+            }).join('');
+        }
+
+        // Event Listeners
+        inputTextArea.addEventListener('input', () => {
+            updateCounter(inputTextArea, inputCounter);
         });
 
-        // Clear text functionality
-        clearButton.addEventListener('click', function() {
-            textarea.value = '';
-            // Trigger input event to update counter
-            textarea.dispatchEvent(new Event('input'));
+        outputTextArea.addEventListener('input', () => {
+            updateCounter(outputTextArea, outputCounter);
         });
 
-        // Download as TXT
-        txtButton.addEventListener('click', function() {
-            const blob = new Blob([textarea.value], {type: "text/plain;charset=utf-8"});
+        // Input Text Buttons
+        copyInputButton.addEventListener('click', () => {
+            copyText(inputTextArea);
+        });
+
+        clearInputButton.addEventListener('click', () => {
+            inputTextArea.value = '';
+            updateCounter(inputTextArea, inputCounter);
+        });
+
+        removeContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = removeContractionsFromText(inputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+        });
+
+        // Output Text Buttons
+        copyOutputButton.addEventListener('click', () => {
+            copyText(outputTextArea);
+        });
+
+        clearOutputButton.addEventListener('click', () => {
+            outputTextArea.value = '';
+            updateCounter(outputTextArea, outputCounter);
+        });
+
+        // Export Buttons
+        txtButton.addEventListener('click', () => {
+            const blob = new Blob([outputTextArea.value], {type: "text/plain;charset=utf-8"});
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = "document.txt";
             link.click();
         });
 
-        // Download as PDF
-        pdfButton.addEventListener('click', function() {
+        pdfButton.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Split text into lines to handle long text
-            const lines = textarea.value.split('\n');
+            const lines = outputTextArea.value.split('\n');
             doc.setFontSize(12);
             doc.text(lines, 10, 10);
             doc.save("document.pdf");
