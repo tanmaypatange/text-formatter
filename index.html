@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plain Text Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            margin-bottom: 10px;
+            padding: 10px;
+            resize: vertical;
+        }
+        #counter {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <textarea id="plainTextArea" placeholder="Paste your text here. It will be converted to plain text."></textarea>
+    <div id="counter">Characters: 0 | Words: 0</div>
+
+    <script>
+        const textarea = document.getElementById('plainTextArea');
+        const counter = document.getElementById('counter');
+
+        textarea.addEventListener('input', function() {
+            // Convert to plain text by creating a temporary div
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = this.value;
+            const plainText = tempDiv.textContent;
+
+            // Update character count
+            const charCount = plainText.length;
+
+            // Count words (split by whitespace, filter out empty strings)
+            const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+
+            // Update counter display
+            counter.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
+        });
+    </script>
+</body>
+</html>
