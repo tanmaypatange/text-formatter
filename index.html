@@ -190,30 +190,48 @@
 
         // Export as Word Document (.docx)
         exportDocx.addEventListener('click', function() {
-            const { Document, Packer, Paragraph, TextRun } = docx;
-            
-            const doc = new Document({
-                sections: [{
-                    children: [
-                        new Paragraph({
-                            children: [
-                                new TextRun(textarea.value)
-                            ]
-                        })
-                    ]
-                }]
-            });
+            // Check if docx library is loaded
+            if (typeof docx === 'undefined') {
+                alert('Word document library failed to load. Please check your internet connection.');
+                return;
+            }
 
-            Packer.toBlob(doc).then(blob => {
-                saveAs(blob, "document.docx");
-            });
+            try {
+                const { Document, Packer, Paragraph, TextRun } = docx;
+                
+                // Create a document with multiple paragraphs to handle longer texts
+                const paragraphs = textarea.value.split('\n').map(line => 
+                    new Paragraph({
+                        children: [new TextRun(line)]
+                    })
+                );
+
+                const doc = new Document({
+                    sections: [{
+                        children: paragraphs
+                    }]
+                });
+
+                Packer.toBlob(doc).then(blob => {
+                    saveAs(blob, "document.docx");
+                }).catch(error => {
+                    console.error('Error creating DOCX:', error);
+                    alert('Failed to create Word document. Please try again.');
+                });
+            } catch (error) {
+                console.error('DOCX export error:', error);
+                alert('An error occurred while creating the Word document.');
+            }
         });
 
         // Export as PDF
         exportPdf.addEventListener('click', function() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            doc.text(textarea.value, 10, 10);
+            
+            // Split text into lines to handle long text
+            const lines = textarea.value.split('\n');
+            doc.text(lines, 10, 10);
             doc.save("document.pdf");
         });
     </script>
