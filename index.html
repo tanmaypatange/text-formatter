@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Plain Text Counter</title>
+    <title>Plain Text Editor</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         html, body {
@@ -42,26 +42,51 @@
             font-size: 16px;
             color: #666;
         }
-        #copyButton {
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
             padding: 8px 15px;
-            background-color: #4CAF50;
-            color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        #copyButton:hover {
+        .btn-copy {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-copy:hover {
             background-color: #45a049;
         }
-        #copyButton:active {
-            background-color: #3d8b40;
+        .btn-export {
+            background-color: #2196F3;
+            color: white;
         }
-        #copyConfirmation {
-            color: #4CAF50;
-            margin-left: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+        .btn-export:hover {
+            background-color: #1E88E5;
+        }
+        #exportDropdown {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+        #exportDropdown button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            padding: 10px 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        #exportDropdown button:hover {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
@@ -70,49 +95,104 @@
         <textarea id="plainTextArea" placeholder="Paste your text here. It will be converted to plain text."></textarea>
         <div class="bottom-row">
             <div id="counter">Characters: 0 | Words: 0</div>
-            <div>
-                <button id="copyButton">Copy Text</button>
-                <span id="copyConfirmation">Copied!</span>
+            <div class="action-buttons">
+                <button id="copyButton" class="btn btn-copy">Copy Text</button>
+                <div style="position: relative;">
+                    <button id="exportButton" class="btn btn-export">Export</button>
+                    <div id="exportDropdown">
+                        <button id="exportTxt">Text File (.txt)</button>
+                        <button id="exportDocx">Word Document (.docx)</button>
+                        <button id="exportPdf">PDF (.pdf)</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.9.0/docx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
         const textarea = document.getElementById('plainTextArea');
         const counter = document.getElementById('counter');
         const copyButton = document.getElementById('copyButton');
-        const copyConfirmation = document.getElementById('copyConfirmation');
+        const exportButton = document.getElementById('exportButton');
+        const exportDropdown = document.getElementById('exportDropdown');
+        const exportTxt = document.getElementById('exportTxt');
+        const exportDocx = document.getElementById('exportDocx');
+        const exportPdf = document.getElementById('exportPdf');
 
+        // Text counter functionality
         textarea.addEventListener('input', function() {
-            // Convert to plain text by creating a temporary div
             const tempDiv = document.createElement('div');
             tempDiv.textContent = this.value;
             const plainText = tempDiv.textContent;
 
-            // Update character count
             const charCount = plainText.length;
-
-            // Count words (split by whitespace, filter out empty strings)
             const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
 
-            // Update counter display
             counter.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
         });
 
+        // Copy to clipboard functionality
         copyButton.addEventListener('click', function() {
-            // Select the text in the textarea
             textarea.select();
-            
-            // Copy the text to clipboard
             document.execCommand('copy');
+            alert('Text copied to clipboard!');
+        });
 
-            // Show copy confirmation
-            copyConfirmation.style.opacity = '1';
+        // Export dropdown toggle
+        exportButton.addEventListener('click', function(e) {
+            exportDropdown.style.display = exportDropdown.style.display === 'block' ? 'none' : 'block';
+            
+            // Position dropdown
+            const rect = exportButton.getBoundingClientRect();
+            exportDropdown.style.position = 'absolute';
+            exportDropdown.style.top = `${rect.bottom}px`;
+            exportDropdown.style.left = `${rect.right - exportDropdown.offsetWidth}px`;
+        });
 
-            // Hide confirmation after 2 seconds
-            setTimeout(() => {
-                copyConfirmation.style.opacity = '0';
-            }, 2000);
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!exportButton.contains(e.target) && !exportDropdown.contains(e.target)) {
+                exportDropdown.style.display = 'none';
+            }
+        });
+
+        // Export as Text File
+        exportTxt.addEventListener('click', function() {
+            const blob = new Blob([textarea.value], {type: "text/plain;charset=utf-8"});
+            saveAs(blob, "document.txt");
+        });
+
+        // Export as Word Document (.docx)
+        exportDocx.addEventListener('click', function() {
+            const { Document, Packer, Paragraph, TextRun } = docx;
+            
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({
+                            children: [
+                                new TextRun(textarea.value)
+                            ]
+                        })
+                    ]
+                }]
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, "document.docx");
+            });
+        });
+
+        // Export as PDF
+        exportPdf.addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text(textarea.value, 10, 10);
+            doc.save("document.pdf");
         });
     </script>
 </body>
