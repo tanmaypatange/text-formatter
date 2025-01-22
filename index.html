@@ -197,7 +197,16 @@
         function removeContractionsFromText(text) {
             return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
                 const lowerMatch = match.toLowerCase();
-                return contractions[lowerMatch] || match;
+                const replacement = contractions[lowerMatch];
+                
+                if (replacement) {
+                    // Preserve the original case of the first letter
+                    return match[0] === match[0].toUpperCase() 
+                        ? replacement[0].toUpperCase() + replacement.slice(1)
+                        : replacement;
+                }
+                
+                return match;
             });
         }
 
