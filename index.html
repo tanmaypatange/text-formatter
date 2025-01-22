@@ -69,7 +69,7 @@
             background-color: #1E88E5;
         }
         .btn-disabled {
-            background-color: #cccccc;
+            background-color: #cccccc !important;
             cursor: not-allowed;
             opacity: 0.6;
         }
@@ -79,17 +79,17 @@
         .btn-secondary:hover {
             background-color: #45a049;
         }
-        #copyConfirmation, #processConfirmation {
-            color: #4CAF50;
+        .confirmation {
             margin-left: 10px;
             font-size: 14px;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-        #exportError {
+        .confirmation-success {
+            color: #4CAF50;
+        }
+        .confirmation-error {
             color: red;
-            margin-left: 10px;
-            font-size: 14px;
         }
     </style>
 </head>
@@ -102,9 +102,11 @@
             <div class="action-buttons">
                 <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
                 <button id="copyInputButton" class="btn">Copy Text</button>
+                <span id="inputCopyConfirmation" class="confirmation confirmation-success"></span>
                 <button id="clearInputButton" class="btn">Clear Text</button>
                 <button id="removeContractionsButton" class="btn btn-secondary">Remove Contractions</button>
-                <span id="processConfirmation">Processed!</span>
+                <button id="addContractionsButton" class="btn btn-secondary">Add Contractions</button>
+                <span id="inputProcessConfirmation" class="confirmation confirmation-success"></span>
             </div>
         </div>
 
@@ -115,12 +117,11 @@
             <div class="action-buttons">
                 <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
                 <button id="copyOutputButton" class="btn">Copy Text</button>
+                <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
                 <button id="clearOutputButton" class="btn">Clear Text</button>
-                <button id="addContractionsButton" class="btn btn-secondary">Add Contractions</button>
                 <button id="txtButton" class="btn btn-disabled" disabled>Download TXT</button>
                 <button id="pdfButton" class="btn btn-disabled" disabled>Download PDF</button>
-                <span id="copyConfirmation">Copied!</span>
-                <span id="exportError"></span>
+                <span id="exportError" class="confirmation confirmation-error"></span>
             </div>
         </div>
     </div>
@@ -139,8 +140,9 @@
         const addContractionsButton = document.getElementById('addContractionsButton');
         const txtButton = document.getElementById('txtButton');
         const pdfButton = document.getElementById('pdfButton');
-        const copyConfirmation = document.getElementById('copyConfirmation');
-        const processConfirmation = document.getElementById('processConfirmation');
+        const inputCopyConfirmation = document.getElementById('inputCopyConfirmation');
+        const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
+        const inputProcessConfirmation = document.getElementById('inputProcessConfirmation');
         const exportError = document.getElementById('exportError');
 
         // Contraction Mappings
@@ -204,11 +206,28 @@
             counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
         }
 
-        function showConfirmation(element) {
+        function showConfirmation(element, message = '', isError = false) {
+            element.textContent = message;
             element.style.opacity = '1';
+            if (isError) {
+                element.classList.remove('confirmation-success');
+                element.classList.add('confirmation-error');
+            } else {
+                element.classList.remove('confirmation-error');
+                element.classList.add('confirmation-success');
+            }
             setTimeout(() => {
                 element.style.opacity = '0';
+                element.textContent = '';
             }, 2000);
+        }
+
+        function handleCopy(textArea, confirmationElement) {
+            if (textArea.value.trim() === '') {
+                showConfirmation(confirmationElement, 'Nothing to copy', true);
+                return;
+            }
+            copyText(textArea, confirmationElement);
         }
 
         function copyText(textArea, confirmationElement) {
@@ -218,15 +237,30 @@
             tempTextArea.select();
             document.execCommand('copy');
             document.body.removeChild(tempTextArea);
-            showConfirmation(confirmationElement);
+            showConfirmation(confirmationElement, 'Copied!');
         }
 
-        function checkExportButtons() {
-            const hasContent = outputTextArea.value.trim() !== '';
-            txtButton.disabled = !hasContent;
-            pdfButton.disabled = !hasContent;
-            txtButton.classList.toggle('btn-disabled', !hasContent);
-            pdfButton.classList.toggle('btn-disabled', !hasContent);
+        function checkButtons() {
+            const inputHasContent = inputTextArea.value.trim() !== '';
+            const outputHasContent = outputTextArea.value.trim() !== '';
+
+            // Input section buttons
+            copyInputButton.disabled = !inputHasContent;
+            clearInputButton.disabled = !inputHasContent;
+            removeContractionsButton.disabled = !inputHasContent;
+            addContractionsButton.disabled = !inputHasContent;
+
+            // Output section buttons
+            copyOutputButton.disabled = !outputHasContent;
+            clearOutputButton.disabled = !outputHasContent;
+            txtButton.disabled = !outputHasContent;
+            pdfButton.disabled = !outputHasContent;
+
+            // Toggle disabled class
+            [copyInputButton, clearInputButton, removeContractionsButton, addContractionsButton,
+             copyOutputButton, clearOutputButton, txtButton, pdfButton].forEach(button => {
+                button.classList.toggle('btn-disabled', button.disabled);
+            });
         }
 
         function removeContractionsFromText(text) {
@@ -249,10 +283,8 @@
         function addContractionsToText(text) {
             let processedText = text;
             Object.entries(contractions).forEach(([expanded, contracted]) => {
-                // Create a regex that matches the expanded form with word boundaries
                 const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
                 processedText = processedText.replace(regex, (match) => {
-                    // Preserve original case
                     return match[0] === match[0].toUpperCase() 
                         ? contracted[0].toUpperCase() + contracted.slice(1)
                         : contracted;
@@ -264,53 +296,54 @@
         // Event Listeners
         inputTextArea.addEventListener('input', () => {
             updateCounter(inputTextArea, inputCounter);
+            checkButtons();
         });
 
         outputTextArea.addEventListener('input', () => {
             updateCounter(outputTextArea, outputCounter);
-            checkExportButtons();
+            checkButtons();
         });
 
         // Input Text Buttons
         copyInputButton.addEventListener('click', () => {
-            copyText(inputTextArea, copyConfirmation);
+            handleCopy(inputTextArea, inputCopyConfirmation);
         });
 
         clearInputButton.addEventListener('click', () => {
             inputTextArea.value = '';
             updateCounter(inputTextArea, inputCounter);
+            checkButtons();
         });
 
         removeContractionsButton.addEventListener('click', () => {
             outputTextArea.value = removeContractionsFromText(inputTextArea.value);
             updateCounter(outputTextArea, outputCounter);
-            showConfirmation(processConfirmation);
-            checkExportButtons();
-        });
-
-        // Output Text Buttons
-        copyOutputButton.addEventListener('click', () => {
-            copyText(outputTextArea, copyConfirmation);
-        });
-
-        clearOutputButton.addEventListener('click', () => {
-            outputTextArea.value = '';
-            updateCounter(outputTextArea, outputCounter);
-            checkExportButtons();
+            showConfirmation(inputProcessConfirmation, 'Contractions Removed!');
+            checkButtons();
         });
 
         addContractionsButton.addEventListener('click', () => {
             outputTextArea.value = addContractionsToText(inputTextArea.value);
             updateCounter(outputTextArea, outputCounter);
-            showConfirmation(processConfirmation);
-            checkExportButtons();
+            showConfirmation(inputProcessConfirmation, 'Contractions Added!');
+            checkButtons();
+        });
+
+        // Output Text Buttons
+        copyOutputButton.addEventListener('click', () => {
+            handleCopy(outputTextArea, outputCopyConfirmation);
+        });
+
+        clearOutputButton.addEventListener('click', () => {
+            outputTextArea.value = '';
+            updateCounter(outputTextArea, outputCounter);
+            checkButtons();
         });
 
         // Export Buttons
         txtButton.addEventListener('click', () => {
             if (outputTextArea.value.trim() === '') {
-                exportError.textContent = 'Nothing to export. Document is blank.';
-                setTimeout(() => { exportError.textContent = ''; }, 2000);
+                showConfirmation(exportError, 'Nothing to export. Document is blank.', true);
                 return;
             }
             const blob = new Blob([outputTextArea.value], {type: "text/plain;charset=utf-8"});
@@ -322,8 +355,7 @@
 
         pdfButton.addEventListener('click', () => {
             if (outputTextArea.value.trim() === '') {
-                exportError.textContent = 'Nothing to export. Document is blank.';
-                setTimeout(() => { exportError.textContent = ''; }, 2000);
+                showConfirmation(exportError, 'Nothing to export. Document is blank.', true);
                 return;
             }
             const { jsPDF } = window.jspdf;
@@ -336,7 +368,7 @@
         });
 
         // Initial setup
-        checkExportButtons();
+        checkButtons();
     </script>
 </body>
 </html>
