@@ -31,7 +31,7 @@
             font-weight: bold;
             color: #333;
         }
-        textarea {
+        textarea, .text-display {
             width: 100%;
             resize: vertical;
             min-height: 200px;
@@ -42,6 +42,12 @@
             outline: none;
             margin-bottom: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .text-display {
+            background-color: white;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-y: auto;
         }
         .action-buttons {
             display: flex;
@@ -91,6 +97,9 @@
         }
         .diff-added {
             background-color: #90EE90;  /* Light green */
+        }
+        .diff-removed {
+            background-color: #FFB6C1;  /* Light red */
         }
     </style>
 </head>
@@ -227,15 +236,18 @@
         }
 
         function compareTexts(inputText, outputText) {
-            const inputWords = inputText.split(/\s+/);
-            const outputWords = outputText.split(/\s+/);
+            const oldWords = inputText.split(/\s+/);
+            const newWords = outputText.split(/\s+/);
             
-            const highlightedWords = outputWords.map(word => {
-                const isChanged = !inputWords.includes(word);
-                return isChanged ? `<span class="diff-added">${word}</span>` : word;
-            });
+            const outputHighlight = newWords.map(word => 
+                !oldWords.includes(word) ? `<span class="diff-added">${word}</span>` : word
+            ).join(' ');
 
-            return highlightedWords.join(' ');
+            const inputHighlight = oldWords.map(word => 
+                !newWords.includes(word) ? `<span class="diff-removed">${word}</span>` : word
+            ).join(' ');
+
+            return { outputText: outputHighlight, inputText: inputHighlight };
         }
 
         // Event Listeners
@@ -277,8 +289,9 @@
         });
 
         compareButton.addEventListener('click', () => {
-            const highlightedText = compareTexts(inputTextArea.value, outputTextArea.value);
-            outputTextArea.innerHTML = highlightedText;
+            const { outputText, inputText } = compareTexts(inputTextArea.value, outputTextArea.value);
+            inputTextArea.innerHTML = inputText;
+            outputTextArea.innerHTML = outputText;
         });
 
         // Initial setup
