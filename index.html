@@ -32,23 +32,56 @@
             margin-bottom: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         #counter {
             padding: 10px;
-            text-align: right;
             font-size: 16px;
             color: #666;
+        }
+        #copyButton {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #copyButton:hover {
+            background-color: #45a049;
+        }
+        #copyButton:active {
+            background-color: #3d8b40;
+        }
+        #copyConfirmation {
+            color: #4CAF50;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <textarea id="plainTextArea" placeholder="Paste your text here. It will be converted to plain text."></textarea>
-        <div id="counter">Characters: 0 | Words: 0</div>
+        <div class="bottom-row">
+            <div id="counter">Characters: 0 | Words: 0</div>
+            <div>
+                <button id="copyButton">Copy Text</button>
+                <span id="copyConfirmation">Copied!</span>
+            </div>
+        </div>
     </div>
 
     <script>
         const textarea = document.getElementById('plainTextArea');
         const counter = document.getElementById('counter');
+        const copyButton = document.getElementById('copyButton');
+        const copyConfirmation = document.getElementById('copyConfirmation');
 
         textarea.addEventListener('input', function() {
             // Convert to plain text by creating a temporary div
@@ -64,6 +97,22 @@
 
             // Update counter display
             counter.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
+        });
+
+        copyButton.addEventListener('click', function() {
+            // Select the text in the textarea
+            textarea.select();
+            
+            // Copy the text to clipboard
+            document.execCommand('copy');
+
+            // Show copy confirmation
+            copyConfirmation.style.opacity = '1';
+
+            // Hide confirmation after 2 seconds
+            setTimeout(() => {
+                copyConfirmation.style.opacity = '0';
+            }, 2000);
         });
     </script>
 </body>
