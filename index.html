@@ -50,7 +50,6 @@
             display: flex;
             gap: 10px;
             align-items: center;
-            position: relative;
         }
         .btn {
             padding: 8px 15px;
@@ -64,6 +63,13 @@
         .btn:hover {
             background-color: #1E88E5;
         }
+        #copyConfirmation {
+            color: #4CAF50;
+            margin-left: 10px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -72,8 +78,11 @@
         <div class="bottom-row">
             <div id="counter">Characters: 0 | Words: 0</div>
             <div class="action-buttons">
+                <button id="copyButton" class="btn">Copy Text</button>
+                <button id="clearButton" class="btn">Clear Text</button>
                 <button id="txtButton" class="btn">Download TXT</button>
                 <button id="pdfButton" class="btn">Download PDF</button>
+                <span id="copyConfirmation">Copied!</span>
             </div>
         </div>
     </div>
@@ -81,8 +90,11 @@
     <script>
         const textarea = document.getElementById('plainTextArea');
         const counter = document.getElementById('counter');
+        const copyButton = document.getElementById('copyButton');
+        const clearButton = document.getElementById('clearButton');
         const txtButton = document.getElementById('txtButton');
         const pdfButton = document.getElementById('pdfButton');
+        const copyConfirmation = document.getElementById('copyConfirmation');
 
         // Text counter functionality
         textarea.addEventListener('input', function() {
@@ -91,6 +103,34 @@
             const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
 
             counter.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
+        });
+
+        // Copy to clipboard without selecting text
+        copyButton.addEventListener('click', function() {
+            // Create a temporary textarea to copy text
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textarea.value;
+            document.body.appendChild(tempTextArea);
+            
+            // Select and copy
+            tempTextArea.select();
+            document.execCommand('copy');
+            
+            // Remove temporary textarea
+            document.body.removeChild(tempTextArea);
+            
+            // Show copy confirmation
+            copyConfirmation.style.opacity = '1';
+            setTimeout(() => {
+                copyConfirmation.style.opacity = '0';
+            }, 2000);
+        });
+
+        // Clear text functionality
+        clearButton.addEventListener('click', function() {
+            textarea.value = '';
+            // Trigger input event to update counter
+            textarea.dispatchEvent(new Event('input'));
         });
 
         // Download as TXT
