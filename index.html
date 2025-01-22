@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Text Utility Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PDF Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         html, body {
@@ -31,7 +34,7 @@
             font-weight: bold;
             color: #333;
         }
-        textarea, .text-display {
+        textarea {
             width: 100%;
             resize: vertical;
             min-height: 200px;
@@ -42,13 +45,6 @@
             outline: none;
             margin-bottom: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .text-display {
-            background-color: white;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-y: auto;
-            display: none;
         }
         .action-buttons {
             display: flex;
@@ -96,13 +92,11 @@
         .confirmation-error {
             color: red;
         }
-        .diff-added {
-            background-color: #90EE90;  /* Light green */
-            padding: 2px 0;
+        .highlight-added {
+            background-color: #90EE90 !important;  /* Light green */
         }
-        .diff-removed {
-            background-color: #FFB6C1;  /* Light red */
-            padding: 2px 0;
+        .highlight-removed {
+            background-color: #FFB6C1 !important;  /* Light red */
         }
     </style>
 </head>
@@ -112,7 +106,6 @@
         <div class="text-section">
             <div class="text-label">Input Your Text</div>
             <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
-            <div class="text-display" id="inputTextDisplay"></div>
             <div class="action-buttons">
                 <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
                 <button id="clearButton" class="btn">Clear Text</button>
@@ -123,7 +116,6 @@
         <div class="text-section">
             <div class="text-label">Output Text</div>
             <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically."></textarea>
-            <div class="text-display" id="outputTextDisplay"></div>
             <div class="action-buttons">
                 <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
                 <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
@@ -141,8 +133,6 @@
         // DOM Elements
         const inputTextArea = document.getElementById('inputTextArea');
         const outputTextArea = document.getElementById('outputTextArea');
-        const inputTextDisplay = document.getElementById('inputTextDisplay');
-        const outputTextDisplay = document.getElementById('outputTextDisplay');
         const inputCounter = document.getElementById('inputCounter');
         const outputCounter = document.getElementById('outputCounter');
         const clearButton = document.getElementById('clearButton');
@@ -154,7 +144,7 @@
         const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
         const processConfirmation = document.getElementById('processConfirmation');
 
-        // Contraction Mappings (same as before)
+        // Contraction Mappings
         const contractions = {
             "are not": "aren't", "cannot": "can't", "could not": "couldn't",
             "did not": "didn't", "does not": "doesn't", "do not": "don't",
@@ -174,54 +164,153 @@
             "you will": "you'll", "you are": "you're", "you have": "you've"
         };
 
-        // Previous utility functions remain the same...
-
-        function compareTexts(inputText, outputText) {
-            const oldWords = inputText.split(/\s+/);
-            const newWords = outputText.split(/\s+/);
-            
-            const outputHighlight = newWords.map(word => 
-                !oldWords.includes(word) ? `<span class="diff-added">${word}</span>` : word
-            ).join(' ');
-
-            const inputHighlight = oldWords.map(word => 
-                !newWords.includes(word) ? `<span class="diff-removed">${word}</span>` : word
-            ).join(' ');
-
-            return { outputText: outputHighlight, inputText: inputHighlight };
+        // Utility Functions
+        function updateCounter(textArea, counterElement) {
+            const plainText = textArea.value;
+            const charCount = plainText.length;
+            const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+            counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
         }
 
-        // Modify compare button event listener
-        compareButton.addEventListener('click', () => {
-            const { outputText, inputText } = compareTexts(inputTextArea.value, outputTextArea.value);
+        function showConfirmation(element, message = '', isError = false) {
+            element.textContent = message;
+            element.style.opacity = '1';
+            element.classList.toggle('confirmation-error', isError);
+            element.classList.toggle('confirmation-success', !isError);
+            setTimeout(() => {
+                element.style.opacity = '0';
+                element.textContent = '';
+            }, 2000);
+        }
+
+        function checkButtons() {
+            const inputHasContent = inputTextArea.value.trim() !== '';
+
+            // Output section buttons
+            [copyOutputButton, revertButton, removeContractionsButton, 
+             addContractionsButton, compareButton].forEach(button => {
+                button.disabled = !inputHasContent;
+                button.classList.toggle('btn-disabled', !inputHasContent);
+            });
+        }
+
+        function copyText(textArea, confirmationElement) {
+            if (textArea.value.trim() === '') {
+                showConfirmation(confirmationElement, 'Nothing to copy', true);
+                return;
+            }
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = textArea.value;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+            showConfirmation(confirmationElement, 'Copied!');
+        }
+
+        function removeContractionsFromText(text) {
+            return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
+                const lowerMatch = match.toLowerCase();
+                const replacement = Object.keys(contractions).find(key => 
+                    contractions[key].toLowerCase() === lowerMatch
+                );
+                
+                return replacement ? 
+                    (match[0] === match[0].toUpperCase() 
+                        ? replacement[0].toUpperCase() + replacement.slice(1)
+                        : replacement) : 
+                    match;
+            });
+        }
+
+        function addContractionsToText(text) {
+            let processedText = text;
+            Object.entries(contractions).forEach(([expanded, contracted]) => {
+                const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
+                processedText = processedText.replace(regex, (match) => {
+                    return match[0] === match[0].toUpperCase() 
+                        ? contracted[0].toUpperCase() + contracted.slice(1)
+                        : contracted;
+                });
+            });
+            return processedText;
+        }
+
+        function compareTexts(inputText, outputText) {
+            const inputWords = inputText.split(/\s+/);
+            const outputWords = outputText.split(/\s+/);
             
-            // Hide textareas and show text displays
-            inputTextArea.style.display = 'none';
-            outputTextArea.style.display = 'none';
-            inputTextDisplay.style.display = 'block';
-            outputTextDisplay.style.display = 'block';
+            const inputHighlighted = inputWords.map(word => 
+                !outputWords.includes(word) ? `<span class="highlight-removed">${word}</span>` : word
+            ).join(' ');
 
-            // Set HTML content
-            inputTextDisplay.innerHTML = inputText;
-            outputTextDisplay.innerHTML = outputText;
+            const outputHighlighted = outputWords.map(word => 
+                !inputWords.includes(word) ? `<span class="highlight-added">${word}</span>` : word
+            ).join(' ');
+
+            return { inputHighlighted, outputHighlighted };
+        }
+
+        // Event Listeners
+        inputTextArea.addEventListener('input', () => {
+            // Mirror input text to output text
+            outputTextArea.value = inputTextArea.value;
+            updateCounter(inputTextArea, inputCounter);
+            updateCounter(outputTextArea, outputCounter);
+            checkButtons();
         });
 
-        // Add event to return to normal view
-        inputTextDisplay.addEventListener('click', () => {
-            inputTextArea.style.display = 'block';
-            outputTextArea.style.display = 'block';
-            inputTextDisplay.style.display = 'none';
-            outputTextDisplay.style.display = 'none';
+        clearButton.addEventListener('click', () => {
+            inputTextArea.value = '';
+            outputTextArea.value = '';
+            updateCounter(inputTextArea, inputCounter);
+            updateCounter(outputTextArea, outputCounter);
+            checkButtons();
         });
 
-        outputTextDisplay.addEventListener('click', () => {
-            inputTextArea.style.display = 'block';
-            outputTextArea.style.display = 'block';
-            inputTextDisplay.style.display = 'none';
-            outputTextDisplay.style.display = 'none';
+        copyOutputButton.addEventListener('click', () => {
+            copyText(outputTextArea, outputCopyConfirmation);
         });
 
-        // Rest of the previous event listeners remain the same...
+        revertButton.addEventListener('click', () => {
+            outputTextArea.value = inputTextArea.value;
+            updateCounter(outputTextArea, outputCounter);
+        });
+
+        removeContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = removeContractionsFromText(outputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation, 'Contractions Removed!');
+        });
+
+        addContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = addContractionsToText(outputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation, 'Contractions Added!');
+        });
+
+        compareButton.addEventListener('click', () => {
+            const { inputHighlighted, outputHighlighted } = compareTexts(
+                inputTextArea.value, 
+                outputTextArea.value
+            );
+
+            // Temporarily replace textarea content with highlighted version
+            const originalInput = inputTextArea.value;
+            const originalOutput = outputTextArea.value;
+
+            inputTextArea.value = inputHighlighted;
+            outputTextArea.value = outputHighlighted;
+
+            // Revert after 5 seconds
+            setTimeout(() => {
+                inputTextArea.value = originalInput;
+                outputTextArea.value = originalOutput;
+            }, 5000);
+        });
+
+        // Initial setup
+        checkButtons();
     </script>
 </body>
 </html>
