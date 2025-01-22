@@ -3,29 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <title>Plain Text Counter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body {
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 0 15px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 100%;
+            padding: 0;
         }
         textarea {
+            flex-grow: 1;
             width: 100%;
-            min-height: 200px;
-            margin-bottom: 10px;
-            padding: 10px;
-            resize: vertical;
+            resize: none;
+            padding: 15px;
+            font-size: 16px;
+            border: none;
+            outline: none;
+            box-sizing: border-box;
         }
         #counter {
+            padding: 10px;
+            background-color: #f0f0f0;
+            text-align: right;
+            font-size: 16px;
             color: #666;
-            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <textarea id="plainTextArea" placeholder="Paste your text here. It will be converted to plain text."></textarea>
-    <div id="counter">Characters: 0 | Words: 0</div>
+    <div class="container">
+        <textarea id="plainTextArea" placeholder="Paste your text here. It will be converted to plain text."></textarea>
+        <div id="counter">Characters: 0 | Words: 0</div>
+    </div>
 
     <script>
         const textarea = document.getElementById('plainTextArea');
