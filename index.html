@@ -50,6 +50,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            align-items: center;
         }
         .counter {
             color: #666;
@@ -64,8 +65,13 @@
             background-color: #2196F3;
             color: white;
         }
-        .btn:hover {
+        .btn:hover:not(.btn-disabled) {
             background-color: #1E88E5;
+        }
+        .btn-disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
         .btn-secondary {
             background-color: #4CAF50;
@@ -73,12 +79,17 @@
         .btn-secondary:hover {
             background-color: #45a049;
         }
-        #copyConfirmation {
+        #copyConfirmation, #processConfirmation {
             color: #4CAF50;
             margin-left: 10px;
             font-size: 14px;
             opacity: 0;
             transition: opacity 0.3s ease;
+        }
+        #exportError {
+            color: red;
+            margin-left: 10px;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -93,6 +104,7 @@
                 <button id="copyInputButton" class="btn">Copy Text</button>
                 <button id="clearInputButton" class="btn">Clear Text</button>
                 <button id="removeContractionsButton" class="btn btn-secondary">Remove Contractions</button>
+                <span id="processConfirmation">Processed!</span>
             </div>
         </div>
 
@@ -104,8 +116,11 @@
                 <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
                 <button id="copyOutputButton" class="btn">Copy Text</button>
                 <button id="clearOutputButton" class="btn">Clear Text</button>
-                <button id="txtButton" class="btn">Download TXT</button>
-                <button id="pdfButton" class="btn">Download PDF</button>
+                <button id="addContractionsButton" class="btn btn-secondary">Add Contractions</button>
+                <button id="txtButton" class="btn btn-disabled" disabled>Download TXT</button>
+                <button id="pdfButton" class="btn btn-disabled" disabled>Download PDF</button>
+                <span id="copyConfirmation">Copied!</span>
+                <span id="exportError"></span>
             </div>
         </div>
     </div>
@@ -121,60 +136,64 @@
         const copyOutputButton = document.getElementById('copyOutputButton');
         const clearOutputButton = document.getElementById('clearOutputButton');
         const removeContractionsButton = document.getElementById('removeContractionsButton');
+        const addContractionsButton = document.getElementById('addContractionsButton');
         const txtButton = document.getElementById('txtButton');
         const pdfButton = document.getElementById('pdfButton');
+        const copyConfirmation = document.getElementById('copyConfirmation');
+        const processConfirmation = document.getElementById('processConfirmation');
+        const exportError = document.getElementById('exportError');
 
-        // Contraction Mapping
+        // Contraction Mappings
         const contractions = {
-            "aren't": "are not",
-            "can't": "cannot",
-            "couldn't": "could not",
-            "didn't": "did not",
-            "doesn't": "does not",
-            "don't": "do not",
-            "hadn't": "had not",
-            "hasn't": "has not",
-            "haven't": "have not",
-            "he'd": "he would",
-            "he'll": "he will",
-            "he's": "he is",
-            "i'd": "i would",
-            "i'll": "i will",
-            "i'm": "i am",
-            "i've": "i have",
-            "isn't": "is not",
-            "it's": "it is",
-            "let's": "let us",
-            "she'd": "she would",
-            "she'll": "she will",
-            "she's": "she is",
-            "shouldn't": "should not",
-            "that's": "that is",
-            "there's": "there is",
-            "they'd": "they would",
-            "they'll": "they will",
-            "they're": "they are",
-            "they've": "they have",
-            "wasn't": "was not",
-            "we'd": "we would",
-            "we're": "we are",
-            "weren't": "were not",
-            "what'll": "what will",
-            "what're": "what are",
-            "what's": "what is",
-            "what've": "what have",
-            "where's": "where is",
-            "who'd": "who would",
-            "who'll": "who will",
-            "who're": "who are",
-            "who's": "who is",
-            "who've": "who have",
-            "won't": "will not",
-            "wouldn't": "would not",
-            "you'd": "you would",
-            "you'll": "you will",
-            "you're": "you are",
-            "you've": "you have"
+            "are not": "aren't",
+            "cannot": "can't",
+            "could not": "couldn't",
+            "did not": "didn't",
+            "does not": "doesn't",
+            "do not": "don't",
+            "had not": "hadn't",
+            "has not": "hasn't",
+            "have not": "haven't",
+            "he would": "he'd",
+            "he will": "he'll",
+            "he is": "he's",
+            "i would": "i'd",
+            "i will": "i'll",
+            "i am": "i'm",
+            "i have": "i've",
+            "is not": "isn't",
+            "it is": "it's",
+            "let us": "let's",
+            "she would": "she'd",
+            "she will": "she'll",
+            "she is": "she's",
+            "should not": "shouldn't",
+            "that is": "that's",
+            "there is": "there's",
+            "they would": "they'd",
+            "they will": "they'll",
+            "they are": "they're",
+            "they have": "they've",
+            "was not": "wasn't",
+            "we would": "we'd",
+            "we are": "we're",
+            "were not": "weren't",
+            "what will": "what'll",
+            "what are": "what're",
+            "what is": "what's",
+            "what have": "what've",
+            "where is": "where's",
+            "who would": "who'd",
+            "who will": "who'll",
+            "who are": "who're",
+            "who is": "who's",
+            "who have": "who've",
+            "will not": "won't",
+            "would not": "wouldn't",
+            "you would": "you'd",
+            "you will": "you'll",
+            "you are": "you're",
+            "you have": "you've"
         };
 
         // Utility Functions
@@ -185,22 +204,39 @@
             counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
         }
 
-        function copyText(textArea) {
+        function showConfirmation(element) {
+            element.style.opacity = '1';
+            setTimeout(() => {
+                element.style.opacity = '0';
+            }, 2000);
+        }
+
+        function copyText(textArea, confirmationElement) {
             const tempTextArea = document.createElement('textarea');
             tempTextArea.value = textArea.value;
             document.body.appendChild(tempTextArea);
             tempTextArea.select();
             document.execCommand('copy');
             document.body.removeChild(tempTextArea);
+            showConfirmation(confirmationElement);
+        }
+
+        function checkExportButtons() {
+            const hasContent = outputTextArea.value.trim() !== '';
+            txtButton.disabled = !hasContent;
+            pdfButton.disabled = !hasContent;
+            txtButton.classList.toggle('btn-disabled', !hasContent);
+            pdfButton.classList.toggle('btn-disabled', !hasContent);
         }
 
         function removeContractionsFromText(text) {
             return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
                 const lowerMatch = match.toLowerCase();
-                const replacement = contractions[lowerMatch];
+                const replacement = Object.keys(contractions).find(key => 
+                    contractions[key].toLowerCase() === lowerMatch
+                );
                 
                 if (replacement) {
-                    // Preserve the original case of the first letter
                     return match[0] === match[0].toUpperCase() 
                         ? replacement[0].toUpperCase() + replacement.slice(1)
                         : replacement;
@@ -210,6 +246,21 @@
             });
         }
 
+        function addContractionsToText(text) {
+            let processedText = text;
+            Object.entries(contractions).forEach(([expanded, contracted]) => {
+                // Create a regex that matches the expanded form with word boundaries
+                const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
+                processedText = processedText.replace(regex, (match) => {
+                    // Preserve original case
+                    return match[0] === match[0].toUpperCase() 
+                        ? contracted[0].toUpperCase() + contracted.slice(1)
+                        : contracted;
+                });
+            });
+            return processedText;
+        }
+
         // Event Listeners
         inputTextArea.addEventListener('input', () => {
             updateCounter(inputTextArea, inputCounter);
@@ -217,11 +268,12 @@
 
         outputTextArea.addEventListener('input', () => {
             updateCounter(outputTextArea, outputCounter);
+            checkExportButtons();
         });
 
         // Input Text Buttons
         copyInputButton.addEventListener('click', () => {
-            copyText(inputTextArea);
+            copyText(inputTextArea, copyConfirmation);
         });
 
         clearInputButton.addEventListener('click', () => {
@@ -232,20 +284,35 @@
         removeContractionsButton.addEventListener('click', () => {
             outputTextArea.value = removeContractionsFromText(inputTextArea.value);
             updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation);
+            checkExportButtons();
         });
 
         // Output Text Buttons
         copyOutputButton.addEventListener('click', () => {
-            copyText(outputTextArea);
+            copyText(outputTextArea, copyConfirmation);
         });
 
         clearOutputButton.addEventListener('click', () => {
             outputTextArea.value = '';
             updateCounter(outputTextArea, outputCounter);
+            checkExportButtons();
+        });
+
+        addContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = addContractionsToText(inputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation);
+            checkExportButtons();
         });
 
         // Export Buttons
         txtButton.addEventListener('click', () => {
+            if (outputTextArea.value.trim() === '') {
+                exportError.textContent = 'Nothing to export. Document is blank.';
+                setTimeout(() => { exportError.textContent = ''; }, 2000);
+                return;
+            }
             const blob = new Blob([outputTextArea.value], {type: "text/plain;charset=utf-8"});
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
@@ -254,6 +321,11 @@
         });
 
         pdfButton.addEventListener('click', () => {
+            if (outputTextArea.value.trim() === '') {
+                exportError.textContent = 'Nothing to export. Document is blank.';
+                setTimeout(() => { exportError.textContent = ''; }, 2000);
+                return;
+            }
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
@@ -262,6 +334,9 @@
             doc.text(lines, 10, 10);
             doc.save("document.pdf");
         });
+
+        // Initial setup
+        checkExportButtons();
     </script>
 </body>
 </html>
