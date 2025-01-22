@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <title>Text Utility Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- PDF Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         html, body {
@@ -92,6 +89,9 @@
         .confirmation-error {
             color: red;
         }
+        .diff-added {
+            background-color: #90EE90;  /* Light green */
+        }
     </style>
 </head>
 <body>
@@ -100,6 +100,10 @@
         <div class="text-section">
             <div class="text-label">Input Your Text</div>
             <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
+            <div class="action-buttons">
+                <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
+                <button id="clearButton" class="btn">Clear Text</button>
+            </div>
         </div>
 
         <!-- Output Section -->
@@ -109,14 +113,12 @@
             <div class="action-buttons">
                 <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
                 <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
-                <button id="clearOutputButton" class="btn btn-disabled" disabled>Clear Text</button>
+                <button id="revertButton" class="btn btn-secondary btn-disabled" disabled>Revert</button>
                 <button id="removeContractionsButton" class="btn btn-secondary btn-disabled" disabled>Remove Contractions</button>
                 <button id="addContractionsButton" class="btn btn-secondary btn-disabled" disabled>Add Contractions</button>
-                <button id="txtButton" class="btn btn-disabled" disabled>Download TXT</button>
-                <button id="pdfButton" class="btn btn-disabled" disabled>Download PDF</button>
+                <button id="compareButton" class="btn btn-disabled" disabled>Compare Text</button>
                 <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
                 <span id="processConfirmation" class="confirmation confirmation-success"></span>
-                <span id="exportError" class="confirmation confirmation-error"></span>
             </div>
         </div>
     </div>
@@ -125,68 +127,35 @@
         // DOM Elements
         const inputTextArea = document.getElementById('inputTextArea');
         const outputTextArea = document.getElementById('outputTextArea');
+        const inputCounter = document.getElementById('inputCounter');
         const outputCounter = document.getElementById('outputCounter');
+        const clearButton = document.getElementById('clearButton');
         const copyOutputButton = document.getElementById('copyOutputButton');
-        const clearOutputButton = document.getElementById('clearOutputButton');
+        const revertButton = document.getElementById('revertButton');
         const removeContractionsButton = document.getElementById('removeContractionsButton');
         const addContractionsButton = document.getElementById('addContractionsButton');
-        const txtButton = document.getElementById('txtButton');
-        const pdfButton = document.getElementById('pdfButton');
+        const compareButton = document.getElementById('compareButton');
         const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
         const processConfirmation = document.getElementById('processConfirmation');
-        const exportError = document.getElementById('exportError');
 
         // Contraction Mappings
         const contractions = {
-            "are not": "aren't",
-            "cannot": "can't",
-            "could not": "couldn't",
-            "did not": "didn't",
-            "does not": "doesn't",
-            "do not": "don't",
-            "had not": "hadn't",
-            "has not": "hasn't",
-            "have not": "haven't",
-            "he would": "he'd",
-            "he will": "he'll",
-            "he is": "he's",
-            "i would": "i'd",
-            "i will": "i'll",
-            "i am": "i'm",
-            "i have": "i've",
-            "is not": "isn't",
-            "it is": "it's",
-            "let us": "let's",
-            "she would": "she'd",
-            "she will": "she'll",
-            "she is": "she's",
-            "should not": "shouldn't",
-            "that is": "that's",
-            "there is": "there's",
-            "they would": "they'd",
-            "they will": "they'll",
-            "they are": "they're",
-            "they have": "they've",
-            "was not": "wasn't",
-            "we would": "we'd",
-            "we are": "we're",
-            "were not": "weren't",
-            "what will": "what'll",
-            "what are": "what're",
-            "what is": "what's",
-            "what have": "what've",
-            "where is": "where's",
-            "who would": "who'd",
-            "who will": "who'll",
-            "who are": "who're",
-            "who is": "who's",
-            "who have": "who've",
-            "will not": "won't",
-            "would not": "wouldn't",
-            "you would": "you'd",
-            "you will": "you'll",
-            "you are": "you're",
-            "you have": "you've"
+            "are not": "aren't", "cannot": "can't", "could not": "couldn't",
+            "did not": "didn't", "does not": "doesn't", "do not": "don't",
+            "had not": "hadn't", "has not": "hasn't", "have not": "haven't",
+            "he would": "he'd", "he will": "he'll", "he is": "he's",
+            "i would": "i'd", "i will": "i'll", "i am": "i'm", "i have": "i've",
+            "is not": "isn't", "it is": "it's", "let us": "let's",
+            "she would": "she'd", "she will": "she'll", "she is": "she's",
+            "should not": "shouldn't", "that is": "that's", "there is": "there's",
+            "they would": "they'd", "they will": "they'll", "they are": "they're",
+            "they have": "they've", "was not": "wasn't", "we would": "we'd",
+            "we are": "we're", "were not": "weren't", "what will": "what'll",
+            "what are": "what're", "what is": "what's", "what have": "what've",
+            "where is": "where's", "who would": "who'd", "who will": "who'll",
+            "who are": "who're", "who is": "who's", "who have": "who've",
+            "will not": "won't", "would not": "wouldn't", "you would": "you'd",
+            "you will": "you'll", "you are": "you're", "you have": "you've"
         };
 
         // Utility Functions
@@ -200,13 +169,8 @@
         function showConfirmation(element, message = '', isError = false) {
             element.textContent = message;
             element.style.opacity = '1';
-            if (isError) {
-                element.classList.remove('confirmation-success');
-                element.classList.add('confirmation-error');
-            } else {
-                element.classList.remove('confirmation-error');
-                element.classList.add('confirmation-success');
-            }
+            element.classList.toggle('confirmation-error', isError);
+            element.classList.toggle('confirmation-success', !isError);
             setTimeout(() => {
                 element.style.opacity = '0';
                 element.textContent = '';
@@ -215,11 +179,10 @@
 
         function checkButtons() {
             const inputHasContent = inputTextArea.value.trim() !== '';
-            const outputHasContent = outputTextArea.value.trim() !== '';
 
             // Output section buttons
-            [copyOutputButton, clearOutputButton, removeContractionsButton, 
-             addContractionsButton, txtButton, pdfButton].forEach(button => {
+            [copyOutputButton, revertButton, removeContractionsButton, 
+             addContractionsButton, compareButton].forEach(button => {
                 button.disabled = !inputHasContent;
                 button.classList.toggle('btn-disabled', !inputHasContent);
             });
@@ -242,13 +205,11 @@
                     contractions[key].toLowerCase() === lowerMatch
                 );
                 
-                if (replacement) {
-                    return match[0] === match[0].toUpperCase() 
+                return replacement ? 
+                    (match[0] === match[0].toUpperCase() 
                         ? replacement[0].toUpperCase() + replacement.slice(1)
-                        : replacement;
-                }
-                
-                return match;
+                        : replacement) : 
+                    match;
             });
         }
 
@@ -265,27 +226,42 @@
             return processedText;
         }
 
+        function compareTexts(inputText, outputText) {
+            const inputWords = inputText.split(/\s+/);
+            const outputWords = outputText.split(/\s+/);
+            
+            const highlightedWords = outputWords.map(word => {
+                const isChanged = !inputWords.includes(word);
+                return isChanged ? `<span class="diff-added">${word}</span>` : word;
+            });
+
+            return highlightedWords.join(' ');
+        }
+
         // Event Listeners
         inputTextArea.addEventListener('input', () => {
             // Mirror input text to output text
             outputTextArea.value = inputTextArea.value;
+            updateCounter(inputTextArea, inputCounter);
             updateCounter(outputTextArea, outputCounter);
             checkButtons();
         });
 
-        // Output Text Buttons
+        clearButton.addEventListener('click', () => {
+            inputTextArea.value = '';
+            outputTextArea.value = '';
+            updateCounter(inputTextArea, inputCounter);
+            updateCounter(outputTextArea, outputCounter);
+            checkButtons();
+        });
+
         copyOutputButton.addEventListener('click', () => {
-            if (outputTextArea.value.trim() === '') {
-                showConfirmation(outputCopyConfirmation, 'Nothing to copy', true);
-                return;
-            }
             copyText(outputTextArea, outputCopyConfirmation);
         });
 
-        clearOutputButton.addEventListener('click', () => {
+        revertButton.addEventListener('click', () => {
             outputTextArea.value = inputTextArea.value;
             updateCounter(outputTextArea, outputCounter);
-            checkButtons();
         });
 
         removeContractionsButton.addEventListener('click', () => {
@@ -300,31 +276,9 @@
             showConfirmation(processConfirmation, 'Contractions Added!');
         });
 
-        // Export Buttons
-        txtButton.addEventListener('click', () => {
-            if (outputTextArea.value.trim() === '') {
-                showConfirmation(exportError, 'Nothing to export. Document is blank.', true);
-                return;
-            }
-            const blob = new Blob([outputTextArea.value], {type: "text/plain;charset=utf-8"});
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = "document.txt";
-            link.click();
-        });
-
-        pdfButton.addEventListener('click', () => {
-            if (outputTextArea.value.trim() === '') {
-                showConfirmation(exportError, 'Nothing to export. Document is blank.', true);
-                return;
-            }
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            
-            const lines = outputTextArea.value.split('\n');
-            doc.setFontSize(12);
-            doc.text(lines, 10, 10);
-            doc.save("document.pdf");
+        compareButton.addEventListener('click', () => {
+            const highlightedText = compareTexts(inputTextArea.value, outputTextArea.value);
+            outputTextArea.innerHTML = highlightedText;
         });
 
         // Initial setup
