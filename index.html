@@ -55,6 +55,7 @@
         .counter {
             color: #666;
             font-size: 14px;
+            margin-right: auto;
         }
         .btn {
             padding: 8px 15px;
@@ -99,28 +100,22 @@
         <div class="text-section">
             <div class="text-label">Input Your Text</div>
             <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
-            <div class="action-buttons">
-                <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
-                <button id="copyInputButton" class="btn">Copy Text</button>
-                <span id="inputCopyConfirmation" class="confirmation confirmation-success"></span>
-                <button id="clearInputButton" class="btn">Clear Text</button>
-                <button id="removeContractionsButton" class="btn btn-secondary">Remove Contractions</button>
-                <button id="addContractionsButton" class="btn btn-secondary">Add Contractions</button>
-                <span id="inputProcessConfirmation" class="confirmation confirmation-success"></span>
-            </div>
         </div>
 
         <!-- Output Section -->
         <div class="text-section">
             <div class="text-label">Output Text</div>
-            <textarea id="outputTextArea" readonly placeholder="Processed text will appear here."></textarea>
+            <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically."></textarea>
             <div class="action-buttons">
                 <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
-                <button id="copyOutputButton" class="btn">Copy Text</button>
-                <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
-                <button id="clearOutputButton" class="btn">Clear Text</button>
+                <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
+                <button id="clearOutputButton" class="btn btn-disabled" disabled>Clear Text</button>
+                <button id="removeContractionsButton" class="btn btn-secondary btn-disabled" disabled>Remove Contractions</button>
+                <button id="addContractionsButton" class="btn btn-secondary btn-disabled" disabled>Add Contractions</button>
                 <button id="txtButton" class="btn btn-disabled" disabled>Download TXT</button>
                 <button id="pdfButton" class="btn btn-disabled" disabled>Download PDF</button>
+                <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
+                <span id="processConfirmation" class="confirmation confirmation-success"></span>
                 <span id="exportError" class="confirmation confirmation-error"></span>
             </div>
         </div>
@@ -130,19 +125,15 @@
         // DOM Elements
         const inputTextArea = document.getElementById('inputTextArea');
         const outputTextArea = document.getElementById('outputTextArea');
-        const inputCounter = document.getElementById('inputCounter');
         const outputCounter = document.getElementById('outputCounter');
-        const copyInputButton = document.getElementById('copyInputButton');
-        const clearInputButton = document.getElementById('clearInputButton');
         const copyOutputButton = document.getElementById('copyOutputButton');
         const clearOutputButton = document.getElementById('clearOutputButton');
         const removeContractionsButton = document.getElementById('removeContractionsButton');
         const addContractionsButton = document.getElementById('addContractionsButton');
         const txtButton = document.getElementById('txtButton');
         const pdfButton = document.getElementById('pdfButton');
-        const inputCopyConfirmation = document.getElementById('inputCopyConfirmation');
         const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
-        const inputProcessConfirmation = document.getElementById('inputProcessConfirmation');
+        const processConfirmation = document.getElementById('processConfirmation');
         const exportError = document.getElementById('exportError');
 
         // Contraction Mappings
@@ -222,12 +213,16 @@
             }, 2000);
         }
 
-        function handleCopy(textArea, confirmationElement) {
-            if (textArea.value.trim() === '') {
-                showConfirmation(confirmationElement, 'Nothing to copy', true);
-                return;
-            }
-            copyText(textArea, confirmationElement);
+        function checkButtons() {
+            const inputHasContent = inputTextArea.value.trim() !== '';
+            const outputHasContent = outputTextArea.value.trim() !== '';
+
+            // Output section buttons
+            [copyOutputButton, clearOutputButton, removeContractionsButton, 
+             addContractionsButton, txtButton, pdfButton].forEach(button => {
+                button.disabled = !inputHasContent;
+                button.classList.toggle('btn-disabled', !inputHasContent);
+            });
         }
 
         function copyText(textArea, confirmationElement) {
@@ -238,29 +233,6 @@
             document.execCommand('copy');
             document.body.removeChild(tempTextArea);
             showConfirmation(confirmationElement, 'Copied!');
-        }
-
-        function checkButtons() {
-            const inputHasContent = inputTextArea.value.trim() !== '';
-            const outputHasContent = outputTextArea.value.trim() !== '';
-
-            // Input section buttons
-            copyInputButton.disabled = !inputHasContent;
-            clearInputButton.disabled = !inputHasContent;
-            removeContractionsButton.disabled = !inputHasContent;
-            addContractionsButton.disabled = !inputHasContent;
-
-            // Output section buttons
-            copyOutputButton.disabled = !outputHasContent;
-            clearOutputButton.disabled = !outputHasContent;
-            txtButton.disabled = !outputHasContent;
-            pdfButton.disabled = !outputHasContent;
-
-            // Toggle disabled class
-            [copyInputButton, clearInputButton, removeContractionsButton, addContractionsButton,
-             copyOutputButton, clearOutputButton, txtButton, pdfButton].forEach(button => {
-                button.classList.toggle('btn-disabled', button.disabled);
-            });
         }
 
         function removeContractionsFromText(text) {
@@ -295,49 +267,37 @@
 
         // Event Listeners
         inputTextArea.addEventListener('input', () => {
-            updateCounter(inputTextArea, inputCounter);
-            checkButtons();
-        });
-
-        outputTextArea.addEventListener('input', () => {
+            // Mirror input text to output text
+            outputTextArea.value = inputTextArea.value;
             updateCounter(outputTextArea, outputCounter);
-            checkButtons();
-        });
-
-        // Input Text Buttons
-        copyInputButton.addEventListener('click', () => {
-            handleCopy(inputTextArea, inputCopyConfirmation);
-        });
-
-        clearInputButton.addEventListener('click', () => {
-            inputTextArea.value = '';
-            updateCounter(inputTextArea, inputCounter);
-            checkButtons();
-        });
-
-        removeContractionsButton.addEventListener('click', () => {
-            outputTextArea.value = removeContractionsFromText(inputTextArea.value);
-            updateCounter(outputTextArea, outputCounter);
-            showConfirmation(inputProcessConfirmation, 'Contractions Removed!');
-            checkButtons();
-        });
-
-        addContractionsButton.addEventListener('click', () => {
-            outputTextArea.value = addContractionsToText(inputTextArea.value);
-            updateCounter(outputTextArea, outputCounter);
-            showConfirmation(inputProcessConfirmation, 'Contractions Added!');
             checkButtons();
         });
 
         // Output Text Buttons
         copyOutputButton.addEventListener('click', () => {
-            handleCopy(outputTextArea, outputCopyConfirmation);
+            if (outputTextArea.value.trim() === '') {
+                showConfirmation(outputCopyConfirmation, 'Nothing to copy', true);
+                return;
+            }
+            copyText(outputTextArea, outputCopyConfirmation);
         });
 
         clearOutputButton.addEventListener('click', () => {
-            outputTextArea.value = '';
+            outputTextArea.value = inputTextArea.value;
             updateCounter(outputTextArea, outputCounter);
             checkButtons();
+        });
+
+        removeContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = removeContractionsFromText(outputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation, 'Contractions Removed!');
+        });
+
+        addContractionsButton.addEventListener('click', () => {
+            outputTextArea.value = addContractionsToText(outputTextArea.value);
+            updateCounter(outputTextArea, outputCounter);
+            showConfirmation(processConfirmation, 'Contractions Added!');
         });
 
         // Export Buttons
