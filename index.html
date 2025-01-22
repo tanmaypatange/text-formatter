@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+<!-- Previous head and styles remain exactly the same -->
 <head>
     <meta charset="UTF-8">
     <title>Text Utility Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <style>
         html, body {
             margin: 0;
@@ -15,7 +15,6 @@
         .container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
             max-width: 1000px;
             margin: 0 auto;
             padding: 20px;
@@ -25,7 +24,6 @@
             display: flex;
             flex-direction: column;
             margin-bottom: 20px;
-            position: relative;
         }
         .text-label {
             margin-bottom: 10px;
@@ -43,33 +41,15 @@
             outline: none;
             margin-bottom: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .comparison-overlay {
-            position: absolute;
-            top: 55px;
-            left: 15px;
-            right: 15px;
-            bottom: 10px;
-            pointer-events: none;
-            z-index: 10;
-            display: none;
-        }
-        .comparison-word {
-            position: absolute;
-            background-color: transparent;
-            transition: background-color 0.3s ease;
-        }
-        .comparison-word.added {
-            background-color: #90EE90;
-        }
-        .comparison-word.removed {
-            background-color: #FFB6C1;
+            font-family: monospace;
+            line-height: 1.5;
         }
         .action-buttons {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             align-items: center;
+            flex-wrap: wrap;
         }
         .counter {
             color: #666;
@@ -84,12 +64,13 @@
             transition: background-color 0.3s ease;
             background-color: #2196F3;
             color: white;
+            font-size: 14px;
         }
         .btn:hover:not(.btn-disabled) {
             background-color: #1E88E5;
         }
         .btn-disabled {
-            background-color: #cccccc !important;
+            background-color: #cccccc;
             cursor: not-allowed;
             opacity: 0.6;
         }
@@ -117,8 +98,7 @@
     <div class="container">
         <div class="text-section">
             <div class="text-label">Input Your Text</div>
-            <textarea id="inputTextArea" placeholder="Paste your text here."></textarea>
-            <div class="comparison-overlay" id="inputComparisonOverlay"></div>
+            <textarea id="inputTextArea" placeholder="Paste your text here." spellcheck="false"></textarea>
             <div class="action-buttons">
                 <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
                 <button id="clearButton" class="btn">Clear Text</button>
@@ -127,16 +107,13 @@
 
         <div class="text-section">
             <div class="text-label">Output Text</div>
-            <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically."></textarea>
-            <div class="comparison-overlay" id="outputComparisonOverlay"></div>
+            <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically." spellcheck="false"></textarea>
             <div class="action-buttons">
                 <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
                 <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
                 <button id="revertButton" class="btn btn-secondary btn-disabled" disabled>Revert</button>
                 <button id="removeContractionsButton" class="btn btn-secondary btn-disabled" disabled>Remove Contractions</button>
                 <button id="addContractionsButton" class="btn btn-secondary btn-disabled" disabled>Add Contractions</button>
-                <button id="compareButton" class="btn btn-disabled" disabled>Compare Text</button>
-                <button id="resetCompareButton" class="btn btn-disabled" disabled>Reset Comparison</button>
                 <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
                 <span id="processConfirmation" class="confirmation confirmation-success"></span>
             </div>
@@ -144,10 +121,9 @@
     </div>
 
     <script>
+        // DOM Elements
         const inputTextArea = document.getElementById('inputTextArea');
         const outputTextArea = document.getElementById('outputTextArea');
-        const inputComparisonOverlay = document.getElementById('inputComparisonOverlay');
-        const outputComparisonOverlay = document.getElementById('outputComparisonOverlay');
         const inputCounter = document.getElementById('inputCounter');
         const outputCounter = document.getElementById('outputCounter');
         const clearButton = document.getElementById('clearButton');
@@ -155,79 +131,111 @@
         const revertButton = document.getElementById('revertButton');
         const removeContractionsButton = document.getElementById('removeContractionsButton');
         const addContractionsButton = document.getElementById('addContractionsButton');
-        const compareButton = document.getElementById('compareButton');
-        const resetCompareButton = document.getElementById('resetCompareButton');
         const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
         const processConfirmation = document.getElementById('processConfirmation');
 
+        // Contractions mapping
         const contractions = {
+            // Standard negative contractions
             "are not": "aren't", "cannot": "can't", "could not": "couldn't",
             "did not": "didn't", "does not": "doesn't", "do not": "don't",
             "had not": "hadn't", "has not": "hasn't", "have not": "haven't",
-            "he would": "he'd", "he will": "he'll", "he is": "he's",
+            "is not": "isn't", "must not": "mustn't", "should not": "shouldn't",
+            "was not": "wasn't", "were not": "weren't", "will not": "won't",
+            "would not": "wouldn't",
+            
+            // Personal pronouns + auxiliary verbs
+            "he would": "he'd", "he will": "he'll", "he is": "he's", "he has": "he's",
             "i would": "i'd", "i will": "i'll", "i am": "i'm", "i have": "i've",
-            "is not": "isn't", "it is": "it's", "let us": "let's",
-            "she would": "she'd", "she will": "she'll", "she is": "she's",
-            "should not": "shouldn't", "that is": "that's", "there is": "there's",
-            "they would": "they'd", "they will": "they'll", "they are": "they're",
-            "they have": "they've", "was not": "wasn't", "we would": "we'd",
-            "we are": "we're", "were not": "weren't", "what will": "what'll",
-            "what are": "what're", "what is": "what's", "what have": "what've",
-            "where is": "where's", "who would": "who'd", "who will": "who'll",
-            "who are": "who're", "who is": "who's", "who have": "who've",
-            "will not": "won't", "would not": "wouldn't", "you would": "you'd",
-            "you will": "you'll", "you are": "you're", "you have": "you've"
+            "she would": "she'd", "she will": "she'll", "she is": "she's", "she has": "she's",
+            "they would": "they'd", "they will": "they'll", "they are": "they're", "they have": "they've",
+            "we would": "we'd", "we will": "we'll", "we are": "we're", "we have": "we've",
+            "you would": "you'd", "you will": "you'll", "you are": "you're", "you have": "you've",
+            "who would": "who'd", "who will": "who'll", "who are": "who're", "who is": "who's", "who have": "who've",
+            
+            // Question words + auxiliary verbs
+            "what is": "what's", "what are": "what're", "what will": "what'll", "what have": "what've",
+            "when is": "when's", "when are": "when're", "when will": "when'll", "when have": "when've",
+            "where is": "where's", "where are": "where're", "where will": "where'll", "where have": "where've",
+            "why is": "why's", "why are": "why're", "why will": "why'll", "why have": "why've",
+            "how is": "how's", "how are": "how're", "how will": "how'll", "how have": "how've",
+            
+            // Demonstratives + auxiliary verbs
+            "that is": "that's", "that will": "that'll", "that have": "that've",
+            "there is": "there's", "there will": "there'll", "there have": "there've",
+            "this is": "this's", "this will": "this'll", "this have": "this've",
+            
+            // Time and date related
+            "today is": "today's", "tomorrow is": "tomorrow's", "yesterday was": "yesterday's",
+            "next week is": "next week's", "last week was": "last week's",
+            "month is": "month's", "year is": "year's", "week is": "week's",
+            "morning is": "morning's", "evening is": "evening's", "night is": "night's",
+            
+            // Common phrases
+            "let us": "let's", "might have": "might've", "must have": "must've",
+            "should have": "should've", "would have": "would've", "could have": "could've",
+            
+            // Possessives (common nouns)
+            "world is": "world's", "country is": "country's", "city is": "city's",
+            "person is": "person's", "people are": "people're", "man is": "man's",
+            "woman is": "woman's", "child is": "child's", "dog is": "dog's",
+            "cat is": "cat's", "house is": "house's", "car is": "car's",
+            "weather is": "weather's", "day is": "day's", "time is": "time's"
         };
 
+        // Core functions
+        function syncText() {
+            outputTextArea.value = inputTextArea.value;
+            updateCounters();
+            updateButtons();
+        }
+
+        function updateCounters() {
+            updateCounter(inputTextArea, inputCounter);
+            updateCounter(outputTextArea, outputCounter);
+        }
+
         function updateCounter(textArea, counterElement) {
-            const plainText = textArea.value;
-            const charCount = plainText.length;
-            const wordCount = plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+            const text = textArea.value;
+            const charCount = text.length;
+            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
             counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
         }
 
-        function showConfirmation(element, message = '', isError = false) {
+        function updateButtons() {
+            const hasOutput = outputTextArea.value.trim() !== '';
+            const isDifferent = inputTextArea.value !== outputTextArea.value;
+            
+            copyOutputButton.disabled = !hasOutput;
+            copyOutputButton.classList.toggle('btn-disabled', !hasOutput);
+            
+            revertButton.disabled = !isDifferent;
+            revertButton.classList.toggle('btn-disabled', !isDifferent);
+
+            removeContractionsButton.disabled = !hasOutput;
+            removeContractionsButton.classList.toggle('btn-disabled', !hasOutput);
+
+            addContractionsButton.disabled = !hasOutput;
+            addContractionsButton.classList.toggle('btn-disabled', !hasOutput);
+        }
+
+        function showConfirmation(element, message, isError = false) {
             element.textContent = message;
             element.style.opacity = '1';
             element.classList.toggle('confirmation-error', isError);
             element.classList.toggle('confirmation-success', !isError);
             setTimeout(() => {
                 element.style.opacity = '0';
-                element.textContent = '';
             }, 2000);
         }
 
-        function checkButtons() {
-            const inputHasContent = inputTextArea.value.trim() !== '';
-
-            [copyOutputButton, revertButton, removeContractionsButton, 
-             addContractionsButton, compareButton].forEach(button => {
-                button.disabled = !inputHasContent;
-                button.classList.toggle('btn-disabled', !inputHasContent);
-            });
-        }
-
-        function copyText(textArea, confirmationElement) {
-            if (textArea.value.trim() === '') {
-                showConfirmation(confirmationElement, 'Nothing to copy', true);
-                return;
-            }
-            const tempTextArea = document.createElement('textarea');
-            tempTextArea.value = textArea.value;
-            document.body.appendChild(tempTextArea);
-            tempTextArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempTextArea);
-            showConfirmation(confirmationElement, 'Copied!');
-        }
-
-        function removeContractionsFromText(text) {
-            return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, (match) => {
+        // Contractions functions
+        function removeContractions(text) {
+            return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, match => {
                 const lowerMatch = match.toLowerCase();
                 const replacement = Object.keys(contractions).find(key => 
                     contractions[key].toLowerCase() === lowerMatch
                 );
-                
                 return replacement ? 
                     (match[0] === match[0].toUpperCase() 
                         ? replacement[0].toUpperCase() + replacement.slice(1)
@@ -236,131 +244,59 @@
             });
         }
 
-        function addContractionsToText(text) {
+        function addContractions(text) {
             let processedText = text;
             Object.entries(contractions).forEach(([expanded, contracted]) => {
                 const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
-                processedText = processedText.replace(regex, (match) => {
-                    return match[0] === match[0].toUpperCase() 
+                processedText = processedText.replace(regex, match => 
+                    match[0] === match[0].toUpperCase() 
                         ? contracted[0].toUpperCase() + contracted.slice(1)
-                        : contracted;
-                });
+                        : contracted
+                );
             });
             return processedText;
         }
 
-        function compareTexts(inputText, outputText) {
-            const inputWords = inputText.split(/\s+/);
-            const outputWords = outputText.split(/\s+/);
-            
-            const addedWords = outputWords.filter(word => !inputWords.includes(word));
-            const removedWords = inputWords.filter(word => !outputWords.includes(word));
-
-            return { addedWords, removedWords };
-        }
-
-        function highlightComparison(inputText, outputText) {
-            const { addedWords, removedWords } = compareTexts(inputText, outputText);
-
-            inputComparisonOverlay.innerHTML = '';
-            outputComparisonOverlay.innerHTML = '';
-
-            function createWordHighlights(textArea, overlay, words, className) {
-                const lines = textArea.value.split('\n');
-                let currentTop = 0;
-                
-                lines.forEach((line) => {
-                    const lineWords = line.split(/\s+/);
-                    let currentLeft = 0;
-
-                    lineWords.forEach((word) => {
-                        const wordSpan = document.createElement('span');
-                        wordSpan.textContent = word + ' ';
-                        wordSpan.style.position = 'absolute';
-                        wordSpan.style.top = `${currentTop}px`;
-                        wordSpan.style.left = `${currentLeft}px`;
-                        
-                        if (words.includes(word)) {
-                            wordSpan.classList.add('comparison-word', className);
-                        }
-
-                        overlay.appendChild(wordSpan);
-
-                        currentLeft += (word.length * 10);
-                    });
-
-                    currentTop += 25;
-                });
-            }
-
-            createWordHighlights(inputTextArea, inputComparisonOverlay, removedWords, 'removed');
-            createWordHighlights(outputTextArea, outputComparisonOverlay, addedWords, 'added');
-
-            inputComparisonOverlay.style.display = 'block';
-            outputComparisonOverlay.style.display = 'block';
-
-            resetCompareButton.disabled = false;
-            resetCompareButton.classList.remove('btn-disabled');
-        }
-
-        function resetComparison() {
-            inputComparisonOverlay.innerHTML = '';
-            outputComparisonOverlay.innerHTML = '';
-            inputComparisonOverlay.style.display = 'none';
-            outputComparisonOverlay.style.display = 'none';
-            resetCompareButton.disabled = true;
-            resetCompareButton.classList.add('btn-disabled');
-        }
-
-        inputTextArea.addEventListener('input', () => {
-            outputTextArea.value = inputTextArea.value;
-            updateCounter(inputTextArea, inputCounter);
-            updateCounter(outputTextArea, outputCounter);
-            checkButtons();
-        });
+        // Event Listeners
+        inputTextArea.addEventListener('input', syncText);
 
         clearButton.addEventListener('click', () => {
             inputTextArea.value = '';
-            outputTextArea.value = '';
-            updateCounter(inputTextArea, inputCounter);
-            updateCounter(outputTextArea, outputCounter);
-            checkButtons();
-            resetComparison();
+            syncText();
         });
 
-        copyOutputButton.addEventListener('click', () => {
-            copyText(outputTextArea, outputCopyConfirmation);
+        copyOutputButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(outputTextArea.value);
+                showConfirmation(outputCopyConfirmation, 'Copied!');
+            } catch {
+                showConfirmation(outputCopyConfirmation, 'Failed to copy', true);
+            }
         });
 
         revertButton.addEventListener('click', () => {
             outputTextArea.value = inputTextArea.value;
-            updateCounter(outputTextArea, outputCounter);
-            resetComparison();
+            updateCounters();
+            updateButtons();
+            showConfirmation(processConfirmation, 'Reverted!');
         });
 
         removeContractionsButton.addEventListener('click', () => {
-            outputTextArea.value = removeContractionsFromText(outputTextArea.value);
-            updateCounter(outputTextArea, outputCounter);
+            outputTextArea.value = removeContractions(outputTextArea.value);
+            updateCounters();
+            updateButtons();
             showConfirmation(processConfirmation, 'Contractions Removed!');
-            resetComparison();
         });
 
         addContractionsButton.addEventListener('click', () => {
-            outputTextArea.value = addContractionsToText(outputTextArea.value);
-            updateCounter(outputTextArea, outputCounter);
+            outputTextArea.value = addContractions(outputTextArea.value);
+            updateCounters();
+            updateButtons();
             showConfirmation(processConfirmation, 'Contractions Added!');
-            resetComparison();
         });
 
-        compareButton.addEventListener('click', () => {
-            highlightComparison(inputTextArea.value, outputTextArea.value);
-        });
-
-        resetCompareButton.addEventListener('click', () => {
-            resetComparison();
-        });
-
-        checkButtons();
+        // Initialize
+        syncText();
     </script>
 </body>
 </html>
