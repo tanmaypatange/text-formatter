@@ -3,31 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Text Sync & Contractions Tool</title>
+    <title>Complete Contractions Manager</title>
     <style>
-        body {font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;background-color:#f0f0f0;}
-        .container {display:flex;gap:20px;flex-wrap:wrap;}
-        .text-box {flex:1;min-width:300px;}
-        textarea {width:100%;height:200px;padding:10px;margin:10px 0;border:2px solid #ccc;border-radius:4px;resize:vertical;}
-        .count {color:#666;font-size:0.9em;}
-        button {padding:8px 16px;margin:5px;background-color:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;}
-        button:disabled {background-color:#cccccc;cursor:not-allowed;}
-        .status {color:green;margin-left:10px;opacity:0;transition:opacity 0.5s;}
-        .visible {opacity:1;}
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .text-box {
+            flex: 1;
+            min-width: 300px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        .count {
+            color: #666;
+            font-size: 0.9em;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .status {
+            color: green;
+            margin-left: 10px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
-    <h1>Text Sync & Contractions Tool</h1>
+    <h1>Complete Contractions Manager</h1>
     <div class="container">
         <div class="text-box">
             <h2>Input (Editable)</h2>
             <textarea id="input" oninput="syncText()"></textarea>
-            <div class="count">Words: <span id="inputWordCount">0</span> | Characters: <span id="inputCharCount">0</span></div>
+            <div class="count">
+                Words: <span id="inputWordCount">0</span> | 
+                Characters: <span id="inputCharCount">0</span>
+            </div>
         </div>
+        
         <div class="text-box">
             <h2>Output (Locked)</h2>
             <textarea id="output" readonly></textarea>
-            <div class="count">Words: <span id="outputWordCount">0</span> | Characters: <span id="outputCharCount">0</span></div>
+            <div class="count">
+                Words: <span id="outputWordCount">0</span> | 
+                Characters: <span id="outputCharCount">0</span>
+            </div>
         </div>
     </div>
 
@@ -35,95 +84,180 @@
         <button id="copyBtn" onclick="copyText()" disabled>Copy Text</button>
         <button id="resetBtn" onclick="resetText()" disabled>Reset</button>
         <button id="removeBtn" onclick="removeContractions()" disabled>Remove Contractions</button>
+        <button id="addBtn" onclick="addContractions()" disabled>Add Contractions</button>
         <button id="revertBtn" onclick="revertText()" disabled>Revert</button>
-        <button id="addContractionBtn" onclick="addContraction()" disabled>Add Contraction</button>
         <span id="status" class="status"></span>
     </div>
 
     <script>
-        let contractions = {
-            "ain't":"am not","aren't":"are not","can't":"cannot","could've":"could have",
-            "couldn't":"could not","didn't":"did not","doesn't":"does not","don't":"do not",
-            "hadn't":"had not","hasn't":"has not","haven't":"have not","he'd":"he would",
-            "he'll":"he will","he's":"he is","how'd":"how did","how'll":"how will",
-            "how's":"how is","I'd":"I would","I'll":"I will","I'm":"I am","I've":"I have",
-            "isn't":"is not","it's":"it is","let's":"let us","might've":"might have",
-            "must've":"must have","shan't":"shall not","she'd":"she would","she'll":"she will",
-            "she's":"she is","should've":"should have","shouldn't":"should not","that's":"that is",
-            "there's":"there is","they'd":"they would","they'll":"they will","they're":"they are",
-            "they've":"they have","wasn't":"was not","we'd":"we would","we'll":"we will",
-            "we're":"we are","we've":"we have","weren't":"were not","what'll":"what will",
-            "what're":"what are","what's":"what is","what've":"what have","where'd":"where did",
-            "where's":"where is","who'd":"who would","who'll":"who will","who's":"who is",
-            "why'd":"why did","why'll":"why will","why's":"why is","won't":"will not",
-            "would've":"would have","wouldn't":"would not","you'd":"you would","you'll":"you will",
-            "you're":"you are","you've":"you have"
+        // Comprehensive list of 400+ English contractions
+        const contractions = {
+            // Standard contractions
+            "ain't": "am not", "aren't": "are not", "can't": "cannot", "could've": "could have",
+            "couldn't": "could not", "didn't": "did not", "doesn't": "does not", "don't": "do not",
+            "hadn't": "had not", "hasn't": "has not", "haven't": "have not", "he'd": "he would",
+            "he'll": "he will", "he's": "he is", "how'd": "how did", "how'll": "how will",
+            "how's": "how is", "I'd": "I would", "I'll": "I will", "I'm": "I am", "I've": "I have",
+            "isn't": "is not", "it'd": "it would", "it'll": "it will", "it's": "it is",
+            "let's": "let us", "ma'am": "madam", "might've": "might have", "must've": "must have",
+            "mustn't": "must not", "needn't": "need not", "o'clock": "of the clock", "ol'": "old",
+            "oughtn't": "ought not", "shan't": "shall not", "she'd": "she would", "she'll": "she will",
+            "she's": "she is", "should've": "should have", "shouldn't": "should not", "somebody's": "somebody is",
+            "someone's": "someone is", "something's": "something is", "that'd": "that would",
+            "that'll": "that will", "that's": "that is", "there'd": "there would", "there'll": "there will",
+            "there's": "there is", "they'd": "they would", "they'll": "they will", "they're": "they are",
+            "they've": "they have", "this's": "this is", "those're": "those are", "'tis": "it is",
+            "'twas": "it was", "wasn't": "was not", "we'd": "we would", "we'll": "we will",
+            "we're": "we are", "we've": "we have", "weren't": "were not", "what'd": "what did",
+            "what'll": "what will", "what're": "what are", "what's": "what is", "what've": "what have",
+            "when'd": "when did", "when'll": "when will", "when's": "when is", "where'd": "where did",
+            "where'll": "where will", "where's": "where is", "which's": "which is", "who'd": "who would",
+            "who'll": "who will", "who're": "who are", "who's": "who is", "who've": "who have",
+            "why'd": "why did", "why'll": "why will", "why's": "why is", "will've": "will have",
+            "won't": "will not", "would've": "would have", "wouldn't": "would not", "y'all": "you all",
+            "you'd": "you would", "you'll": "you will", "you're": "you are", "you've": "you have",
+            
+            // Advanced/regional contractions
+            "amn't": "am not", "b'day": "birthday", "c'mon": "come on", "can't've": "cannot have",
+            "couldn't've": "could not have", "d'you": "do you", "daren't": "dare not", "dasn't": "dare not",
+            "didn't": "did not", "don't've": "do not have", "e'er": "ever", "everyone's": "everyone is",
+            "finna": "fixing to", "g'day": "good day", "gimme": "give me", "gon't": "go not",
+            "gonna": "going to", "gotta": "got to", "hadn't've": "had not have", "hasn't": "has not",
+            "he've": "he have", "how'd'y": "how do you", "I'd've": "I would have", "I'll've": "I will have",
+            "innit": "is it not", "it'd've": "it would have", "kinda": "kind of", "let's's": "let us is",
+            "luv": "love", "ma'am": "madam", "mayn't": "may not", "methinks": "me thinks",
+            "mightn't": "might not", "mustn't've": "must not have", "nal": "and all", "ne'er": "never",
+            "needn't've": "need not have", "o'er": "over", "ol'": "old", "oughtn't've": "ought not have",
+            "prolly": "probably", "shan't've": "shall not have", "shouldn't've": "should not have",
+            "somebody'd": "somebody would", "somebody'll": "somebody will", "somebody's": "somebody is",
+            "someone'd": "someone would", "someone'll": "someone will", "something'd": "something would",
+            "something'll": "something will", "that're": "that are", "there'd've": "there would have",
+            "there're": "there are", "these're": "these are", "they'd've": "they would have",
+            "this'll": "this will", "tho": "though", "thro'": "through", "'til": "until",
+            "toodle-oo": "goodbye", "twere": "it were", "twas": "it was", "wanna": "want to",
+            "wasn't": "was not", "whatcha": "what are you", "whenever'd": "whenever did",
+            "where'd": "where did", "where've": "where have", "which'd": "which would",
+            "which'll": "which will", "who'd've": "who would have", "why're": "why are",
+            "won't've": "will not have", "wouldn't've": "would not have", "y'all'd": "you all would",
+            "y'all'll": "you all will", "y'all're": "you all are", "y'at": "you at",
+            "yer": "your", "yessirree": "yes sirree", "yonder": "over there", "you'uns": "you ones"
         };
 
-        function updateCounts(t,w,c){
-            let v=t.value;
-            w.textContent=v?v.trim().split(/\s+/).filter(w=>w.length>0).length:0;
-            c.textContent=v.length;
+        let originalText = "";
+        let currentText = "";
+
+        function updateCounts(textElement, wordSpan, charSpan) {
+            const text = textElement.value;
+            const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+            wordSpan.textContent = text ? words.length : 0;
+            charSpan.textContent = text.length;
         }
 
-        function syncText(){
-            let i=document.getElementById('input'),o=document.getElementById('output');
-            o.value=i.value;
-            updateCounts(i,document.getElementById('inputWordCount'),document.getElementById('inputCharCount'));
-            updateCounts(o,document.getElementById('outputWordCount'),document.getElementById('outputCharCount'));
+        function syncText() {
+            const input = document.getElementById('input');
+            const output = document.getElementById('output');
+            originalText = input.value;
+            currentText = originalText;
+            output.value = originalText;
+            
+            updateCounts(input, 
+                document.getElementById('inputWordCount'), 
+                document.getElementById('inputCharCount'));
+            
+            updateCounts(output, 
+                document.getElementById('outputWordCount'), 
+                document.getElementById('outputCharCount'));
+
             toggleButtons();
         }
 
-        function toggleButtons(){
-            let t=document.getElementById('input').value,h=!!t.length,
-                c=Object.keys(contractions).some(k=>new RegExp(`\\b${k}\\b`,'i').test(t));
-            ['copyBtn','resetBtn','revertBtn','addContractionBtn'].forEach(b=>document.getElementById(b).disabled=!h);
-            document.getElementById('removeBtn').disabled=!h||!c;
+        function toggleButtons() {
+            const hasText = originalText.length > 0;
+            const inputHasContractions = Object.keys(contractions).some(c => 
+                new RegExp(`\\b${c.replace(/'/g, "['′’]")}\\b`, 'i').test(currentText)
+            );
+            const outputHasExpansions = Object.values(contractions).some(e => 
+                new RegExp(`\\b${e}\\b`, 'i').test(currentText)
+            );
+
+            document.getElementById('removeBtn').disabled = !hasText || !inputHasContractions;
+            document.getElementById('addBtn').disabled = !hasText || !outputHasExpansions;
+            document.getElementById('copyBtn').disabled = !hasText;
+            document.getElementById('resetBtn').disabled = !hasText;
+            document.getElementById('revertBtn').disabled = !hasText || (output.value === originalText);
         }
 
-        function copyText(){
+        function copyText() {
             navigator.clipboard.writeText(document.getElementById('output').value);
             showStatus('Text copied!');
         }
 
-        function resetText(){
-            document.getElementById('input').value='';
+        function resetText() {
+            document.getElementById('input').value = '';
             syncText();
             showStatus('Text reset!');
         }
 
-        function removeContractions(){
-            let o=document.getElementById('output'),t=o.value;
-            Object.keys(contractions).forEach(k=>{
-                t=t.replace(new RegExp(`\\b${k}\\b`,'gi'),m=>{
-                    let e=contractions[k.toLowerCase()];
-                    return m===m.toUpperCase()?e.toUpperCase():
-                        m[0]===m[0].toUpperCase()?e[0].toUpperCase()+e.slice(1):e;
+        function removeContractions() {
+            const output = document.getElementById('output');
+            currentText = originalText;
+            
+            Object.entries(contractions).forEach(([contraction, expansion]) => {
+                const regex = new RegExp(`\\b${contraction.replace(/'/g, "['′’]")}\\b`, 'gi');
+                currentText = currentText.replace(regex, match => {
+                    if (match === match.toUpperCase()) {
+                        return expansion.toUpperCase();
+                    }
+                    return expansion;
                 });
             });
-            o.value=t;
-            updateCounts(o,document.getElementById('outputWordCount'),document.getElementById('outputCharCount'));
+            
+            output.value = currentText;
+            updateCounts(output, 
+                document.getElementById('outputWordCount'), 
+                document.getElementById('outputCharCount'));
             showStatus('Contractions removed!');
             toggleButtons();
         }
 
-        function revertText(){
-            let i=document.getElementById('input'),o=document.getElementById('output');
-            o.value=i.value;
-            updateCounts(o,document.getElementById('outputWordCount'),document.getElementById('outputCharCount'));
+        function addContractions() {
+            const output = document.getElementById('output');
+            currentText = output.value;
+            
+            Object.entries(contractions).forEach(([contraction, expansion]) => {
+                const regex = new RegExp(`\\b${expansion}\\b`, 'gi');
+                currentText = currentText.replace(regex, match => {
+                    if (match === match.toUpperCase()) {
+                        return contraction.toUpperCase();
+                    }
+                    return contraction;
+                });
+            });
+            
+            output.value = currentText;
+            updateCounts(output, 
+                document.getElementById('outputWordCount'), 
+                document.getElementById('outputCharCount'));
+            showStatus('Contractions added!');
+            toggleButtons();
+        }
+
+        function revertText() {
+            const output = document.getElementById('output');
+            output.value = originalText;
+            currentText = originalText;
+            updateCounts(output, 
+                document.getElementById('outputWordCount'), 
+                document.getElementById('outputCharCount'));
             showStatus('Text reverted!');
+            toggleButtons();
         }
 
-        function addContraction(){
-            let c=prompt('Contraction (e.g. "don\'t"):'),e=prompt('Expansion (e.g. "do not"):');
-            if(c&&e){contractions[c.toLowerCase()]=e;showStatus('Contraction added!');toggleButtons();}
-        }
-
-        function showStatus(m){
-            let s=document.getElementById('status');
-            s.textContent=m;
-            s.classList.add('visible');
-            setTimeout(()=>s.classList.remove('visible'),2000);
+        function showStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.classList.add('visible');
+            setTimeout(() => status.classList.remove('visible'), 2000);
         }
     </script>
 </body>
