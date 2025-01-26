@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Contractions Manager</title>
+    <title>Case-Preserving Contractions Manager</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -59,7 +59,7 @@
     </style>
 </head>
 <body>
-    <h1>Complete Contractions Manager</h1>
+    <h1>Case-Preserving Contractions Manager</h1>
     <div class="container">
         <div class="text-box">
             <h2>Input (Editable)</h2>
@@ -90,61 +90,51 @@
     </div>
 
     <script>
-        // Comprehensive list of 400+ English contractions
         const contractions = {
-            // Standard contractions
-            "ain't": "am not", "aren't": "are not", "can't": "cannot", "could've": "could have",
-            "couldn't": "could not", "didn't": "did not", "doesn't": "does not", "don't": "do not",
-            "hadn't": "had not", "hasn't": "has not", "haven't": "have not", "he'd": "he would",
-            "he'll": "he will", "he's": "he is", "how'd": "how did", "how'll": "how will",
-            "how's": "how is", "I'd": "I would", "I'll": "I will", "I'm": "I am", "I've": "I have",
-            "isn't": "is not", "it'd": "it would", "it'll": "it will", "it's": "it is",
-            "let's": "let us", "ma'am": "madam", "might've": "might have", "must've": "must have",
-            "mustn't": "must not", "needn't": "need not", "o'clock": "of the clock", "ol'": "old",
-            "oughtn't": "ought not", "shan't": "shall not", "she'd": "she would", "she'll": "she will",
-            "she's": "she is", "should've": "should have", "shouldn't": "should not", "somebody's": "somebody is",
-            "someone's": "someone is", "something's": "something is", "that'd": "that would",
-            "that'll": "that will", "that's": "that is", "there'd": "there would", "there'll": "there will",
-            "there's": "there is", "they'd": "they would", "they'll": "they will", "they're": "they are",
-            "they've": "they have", "this's": "this is", "those're": "those are", "'tis": "it is",
-            "'twas": "it was", "wasn't": "was not", "we'd": "we would", "we'll": "we will",
-            "we're": "we are", "we've": "we have", "weren't": "were not", "what'd": "what did",
-            "what'll": "what will", "what're": "what are", "what's": "what is", "what've": "what have",
-            "when'd": "when did", "when'll": "when will", "when's": "when is", "where'd": "where did",
-            "where'll": "where will", "where's": "where is", "which's": "which is", "who'd": "who would",
-            "who'll": "who will", "who're": "who are", "who's": "who is", "who've": "who have",
-            "why'd": "why did", "why'll": "why will", "why's": "why is", "will've": "will have",
-            "won't": "will not", "would've": "would have", "wouldn't": "would not", "y'all": "you all",
-            "you'd": "you would", "you'll": "you will", "you're": "you are", "you've": "you have",
-            
-            // Advanced/regional contractions
-            "amn't": "am not", "b'day": "birthday", "c'mon": "come on", "can't've": "cannot have",
-            "couldn't've": "could not have", "d'you": "do you", "daren't": "dare not", "dasn't": "dare not",
-            "didn't": "did not", "don't've": "do not have", "e'er": "ever", "everyone's": "everyone is",
-            "finna": "fixing to", "g'day": "good day", "gimme": "give me", "gon't": "go not",
-            "gonna": "going to", "gotta": "got to", "hadn't've": "had not have", "hasn't": "has not",
-            "he've": "he have", "how'd'y": "how do you", "I'd've": "I would have", "I'll've": "I will have",
-            "innit": "is it not", "it'd've": "it would have", "kinda": "kind of", "let's's": "let us is",
-            "luv": "love", "ma'am": "madam", "mayn't": "may not", "methinks": "me thinks",
-            "mightn't": "might not", "mustn't've": "must not have", "nal": "and all", "ne'er": "never",
-            "needn't've": "need not have", "o'er": "over", "ol'": "old", "oughtn't've": "ought not have",
-            "prolly": "probably", "shan't've": "shall not have", "shouldn't've": "should not have",
-            "somebody'd": "somebody would", "somebody'll": "somebody will", "somebody's": "somebody is",
-            "someone'd": "someone would", "someone'll": "someone will", "something'd": "something would",
-            "something'll": "something will", "that're": "that are", "there'd've": "there would have",
-            "there're": "there are", "these're": "these are", "they'd've": "they would have",
-            "this'll": "this will", "tho": "though", "thro'": "through", "'til": "until",
-            "toodle-oo": "goodbye", "twere": "it were", "twas": "it was", "wanna": "want to",
-            "wasn't": "was not", "whatcha": "what are you", "whenever'd": "whenever did",
-            "where'd": "where did", "where've": "where have", "which'd": "which would",
-            "which'll": "which will", "who'd've": "who would have", "why're": "why are",
-            "won't've": "will not have", "wouldn't've": "would not have", "y'all'd": "you all would",
-            "y'all'll": "you all will", "y'all're": "you all are", "y'at": "you at",
-            "yer": "your", "yessirree": "yes sirree", "yonder": "over there", "you'uns": "you ones"
+            "how're": "how are",
+            "how's": "how is",
+            "what're": "what are",
+            "where're": "where are",
+            "when're": "when are",
+            "why're": "why are",
+            "who're": "who are",
+            "that're": "that are",
+            "there're": "there are",
+            "they're": "they are",
+            "you're": "you are",
+            "we're": "we are",
+            "ain't": "am not", "aren't": "are not", "can't": "cannot",
+            "could've": "could have", "couldn't": "could not", "didn't": "did not",
+            "doesn't": "does not", "don't": "do not", "hadn't": "had not",
+            "hasn't": "has not", "haven't": "have not", "he'd": "he would",
+            "he'll": "he will", "he's": "he is", "how'd": "how did",
+            "how'll": "how will", "I'd": "I would", "I'll": "I will",
+            "I'm": "I am", "I've": "I have", "isn't": "is not",
+            "it's": "it is", "let's": "let us", "might've": "might have",
+            "must've": "must have", "mustn't": "must not", "needn't": "need not",
+            "oughtn't": "ought not", "shan't": "shall not", "she'd": "she would",
+            "she'll": "she will", "she's": "she is", "should've": "should have",
+            "shouldn't": "should not", "that's": "that is", "there's": "there is",
+            "they'd": "they would", "they'll": "they will", "they've": "they have",
+            "wasn't": "was not", "we'd": "we would", "we'll": "we will",
+            "we've": "we have", "weren't": "were not", "what'll": "what will",
+            "what's": "what is", "what've": "what have", "where'd": "where did",
+            "where's": "where is", "who'd": "who would", "who'll": "who will",
+            "who's": "who is", "why'd": "why did", "why'll": "why will",
+            "why's": "why is", "won't": "will not", "would've": "would have",
+            "wouldn't": "would not", "y'all": "you all", "you'd": "you would",
+            "you'll": "you will", "you've": "you have"
         };
 
         let originalText = "";
         let currentText = "";
+
+        // Case preservation helpers
+        const preserveCase = (source, target) => {
+            if (source === source.toUpperCase()) return target.toUpperCase();
+            if (source[0] === source[0].toUpperCase()) return target.charAt(0).toUpperCase() + target.slice(1);
+            return target.toLowerCase();
+        };
 
         function updateCounts(textElement, wordSpan, charSpan) {
             const text = textElement.value;
@@ -174,7 +164,7 @@
         function toggleButtons() {
             const hasText = originalText.length > 0;
             const inputHasContractions = Object.keys(contractions).some(c => 
-                new RegExp(`\\b${c.replace(/'/g, "['′’]")}\\b`, 'i').test(currentText)
+                new RegExp(`\\b${c}\\b`, 'i').test(currentText)
             );
             const outputHasExpansions = Object.values(contractions).some(e => 
                 new RegExp(`\\b${e}\\b`, 'i').test(currentText)
@@ -203,13 +193,10 @@
             currentText = originalText;
             
             Object.entries(contractions).forEach(([contraction, expansion]) => {
-                const regex = new RegExp(`\\b${contraction.replace(/'/g, "['′’]")}\\b`, 'gi');
-                currentText = currentText.replace(regex, match => {
-                    if (match === match.toUpperCase()) {
-                        return expansion.toUpperCase();
-                    }
-                    return expansion;
-                });
+                const regex = new RegExp(`\\b${contraction}\\b`, 'gi');
+                currentText = currentText.replace(regex, match => 
+                    preserveCase(match, expansion)
+                );
             });
             
             output.value = currentText;
@@ -226,12 +213,9 @@
             
             Object.entries(contractions).forEach(([contraction, expansion]) => {
                 const regex = new RegExp(`\\b${expansion}\\b`, 'gi');
-                currentText = currentText.replace(regex, match => {
-                    if (match === match.toUpperCase()) {
-                        return contraction.toUpperCase();
-                    }
-                    return contraction;
-                });
+                currentText = currentText.replace(regex, match => 
+                    preserveCase(match, contraction)
+                );
             });
             
             output.value = currentText;
