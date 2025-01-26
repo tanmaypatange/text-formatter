@@ -1,302 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- Previous head and styles remain exactly the same -->
 <head>
     <meta charset="UTF-8">
-    <title>Text Utility Tool</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Sync & Contractions Tool</title>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .text-section {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
-        .text-label {
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-        textarea {
-            width: 100%;
-            resize: vertical;
-            min-height: 200px;
-            padding: 15px;
-            font-size: 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            outline: none;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            font-family: monospace;
-            line-height: 1.5;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .counter {
-            color: #666;
-            font-size: 14px;
-            margin-right: auto;
-        }
-        .btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            background-color: #2196F3;
-            color: white;
-            font-size: 14px;
-        }
-        .btn:hover:not(.btn-disabled) {
-            background-color: #1E88E5;
-        }
-        .btn-disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-        .btn-secondary {
-            background-color: #4CAF50;
-        }
-        .btn-secondary:hover {
-            background-color: #45a049;
-        }
-        .confirmation {
-            margin-left: 10px;
-            font-size: 14px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .confirmation-success {
-            color: #4CAF50;
-        }
-        .confirmation-error {
-            color: red;
-        }
+        body {font-family:Arial,sans-serif;max-width:800px;margin:0 auto;padding:20px;background-color:#f0f0f0;}
+        .container {display:flex;gap:20px;flex-wrap:wrap;}
+        .text-box {flex:1;min-width:300px;}
+        textarea {width:100%;height:200px;padding:10px;margin:10px 0;border:2px solid #ccc;border-radius:4px;resize:vertical;}
+        .count {color:#666;font-size:0.9em;}
+        button {padding:8px 16px;margin:5px;background-color:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;}
+        button:disabled {background-color:#cccccc;cursor:not-allowed;}
+        .status {color:green;margin-left:10px;opacity:0;transition:opacity 0.5s;}
+        .visible {opacity:1;}
     </style>
 </head>
 <body>
+    <h1>Text Sync & Contractions Tool</h1>
     <div class="container">
-        <div class="text-section">
-            <div class="text-label">Input Your Text</div>
-            <textarea id="inputTextArea" placeholder="Paste your text here." spellcheck="false"></textarea>
-            <div class="action-buttons">
-                <div class="counter" id="inputCounter">Characters: 0 | Words: 0</div>
-                <button id="clearButton" class="btn">Clear Text</button>
-            </div>
+        <div class="text-box">
+            <h2>Input (Editable)</h2>
+            <textarea id="input" oninput="syncText()"></textarea>
+            <div class="count">Words: <span id="inputWordCount">0</span> | Characters: <span id="inputCharCount">0</span></div>
         </div>
-
-        <div class="text-section">
-            <div class="text-label">Output Text</div>
-            <textarea id="outputTextArea" readonly placeholder="Input text will appear here automatically." spellcheck="false"></textarea>
-            <div class="action-buttons">
-                <div class="counter" id="outputCounter">Characters: 0 | Words: 0</div>
-                <button id="copyOutputButton" class="btn btn-disabled" disabled>Copy Text</button>
-                <button id="revertButton" class="btn btn-secondary btn-disabled" disabled>Revert</button>
-                <button id="removeContractionsButton" class="btn btn-secondary btn-disabled" disabled>Remove Contractions</button>
-                <button id="addContractionsButton" class="btn btn-secondary btn-disabled" disabled>Add Contractions</button>
-                <span id="outputCopyConfirmation" class="confirmation confirmation-success"></span>
-                <span id="processConfirmation" class="confirmation confirmation-success"></span>
-            </div>
+        <div class="text-box">
+            <h2>Output (Locked)</h2>
+            <textarea id="output" readonly></textarea>
+            <div class="count">Words: <span id="outputWordCount">0</span> | Characters: <span id="outputCharCount">0</span></div>
         </div>
     </div>
 
-    <script>
-        // DOM Elements
-        const inputTextArea = document.getElementById('inputTextArea');
-        const outputTextArea = document.getElementById('outputTextArea');
-        const inputCounter = document.getElementById('inputCounter');
-        const outputCounter = document.getElementById('outputCounter');
-        const clearButton = document.getElementById('clearButton');
-        const copyOutputButton = document.getElementById('copyOutputButton');
-        const revertButton = document.getElementById('revertButton');
-        const removeContractionsButton = document.getElementById('removeContractionsButton');
-        const addContractionsButton = document.getElementById('addContractionsButton');
-        const outputCopyConfirmation = document.getElementById('outputCopyConfirmation');
-        const processConfirmation = document.getElementById('processConfirmation');
+    <div>
+        <button id="copyBtn" onclick="copyText()" disabled>Copy Text</button>
+        <button id="resetBtn" onclick="resetText()" disabled>Reset</button>
+        <button id="removeBtn" onclick="removeContractions()" disabled>Remove Contractions</button>
+        <button id="revertBtn" onclick="revertText()" disabled>Revert</button>
+        <button id="addContractionBtn" onclick="addContraction()" disabled>Add Contraction</button>
+        <span id="status" class="status"></span>
+    </div>
 
-        // Contractions mapping
-        const contractions = {
-            // Standard negative contractions
-            "are not": "aren't", "cannot": "can't", "could not": "couldn't",
-            "did not": "didn't", "does not": "doesn't", "do not": "don't",
-            "had not": "hadn't", "has not": "hasn't", "have not": "haven't",
-            "is not": "isn't", "must not": "mustn't", "should not": "shouldn't",
-            "was not": "wasn't", "were not": "weren't", "will not": "won't",
-            "would not": "wouldn't",
-            
-            // Personal pronouns + auxiliary verbs
-            "he would": "he'd", "he will": "he'll", "he is": "he's", "he has": "he's",
-            "i would": "i'd", "i will": "i'll", "i am": "i'm", "i have": "i've",
-            "she would": "she'd", "she will": "she'll", "she is": "she's", "she has": "she's",
-            "they would": "they'd", "they will": "they'll", "they are": "they're", "they have": "they've",
-            "we would": "we'd", "we will": "we'll", "we are": "we're", "we have": "we've",
-            "you would": "you'd", "you will": "you'll", "you are": "you're", "you have": "you've",
-            "who would": "who'd", "who will": "who'll", "who are": "who're", "who is": "who's", "who have": "who've",
-            
-            // Question words + auxiliary verbs
-            "what is": "what's", "what are": "what're", "what will": "what'll", "what have": "what've",
-            "when is": "when's", "when are": "when're", "when will": "when'll", "when have": "when've",
-            "where is": "where's", "where are": "where're", "where will": "where'll", "where have": "where've",
-            "why is": "why's", "why are": "why're", "why will": "why'll", "why have": "why've",
-            "how is": "how's", "how are": "how're", "how will": "how'll", "how have": "how've",
-            
-            // Demonstratives + auxiliary verbs
-            "that is": "that's", "that will": "that'll", "that have": "that've",
-            "there is": "there's", "there will": "there'll", "there have": "there've",
-            "this is": "this's", "this will": "this'll", "this have": "this've",
-            
-            // Time and date related
-            "today is": "today's", "tomorrow is": "tomorrow's", "yesterday was": "yesterday's",
-            "next week is": "next week's", "last week was": "last week's",
-            "month is": "month's", "year is": "year's", "week is": "week's",
-            "morning is": "morning's", "evening is": "evening's", "night is": "night's",
-            
-            // Common phrases
-            "let us": "let's", "might have": "might've", "must have": "must've",
-            "should have": "should've", "would have": "would've", "could have": "could've",
-            
-            // Possessives (common nouns)
-            "world is": "world's", "country is": "country's", "city is": "city's",
-            "person is": "person's", "people are": "people're", "man is": "man's",
-            "woman is": "woman's", "child is": "child's", "dog is": "dog's",
-            "cat is": "cat's", "house is": "house's", "car is": "car's",
-            "weather is": "weather's", "day is": "day's", "time is": "time's"
+    <script>
+        let contractions = {
+            "ain't":"am not","aren't":"are not","can't":"cannot","could've":"could have",
+            "couldn't":"could not","didn't":"did not","doesn't":"does not","don't":"do not",
+            "hadn't":"had not","hasn't":"has not","haven't":"have not","he'd":"he would",
+            "he'll":"he will","he's":"he is","how'd":"how did","how'll":"how will",
+            "how's":"how is","I'd":"I would","I'll":"I will","I'm":"I am","I've":"I have",
+            "isn't":"is not","it's":"it is","let's":"let us","might've":"might have",
+            "must've":"must have","shan't":"shall not","she'd":"she would","she'll":"she will",
+            "she's":"she is","should've":"should have","shouldn't":"should not","that's":"that is",
+            "there's":"there is","they'd":"they would","they'll":"they will","they're":"they are",
+            "they've":"they have","wasn't":"was not","we'd":"we would","we'll":"we will",
+            "we're":"we are","we've":"we have","weren't":"were not","what'll":"what will",
+            "what're":"what are","what's":"what is","what've":"what have","where'd":"where did",
+            "where's":"where is","who'd":"who would","who'll":"who will","who's":"who is",
+            "why'd":"why did","why'll":"why will","why's":"why is","won't":"will not",
+            "would've":"would have","wouldn't":"would not","you'd":"you would","you'll":"you will",
+            "you're":"you are","you've":"you have"
         };
 
-        // Core functions
-        function syncText() {
-            outputTextArea.value = inputTextArea.value;
-            updateCounters();
-            updateButtons();
+        function updateCounts(t,w,c){
+            let v=t.value;
+            w.textContent=v?v.trim().split(/\s+/).filter(w=>w.length>0).length:0;
+            c.textContent=v.length;
         }
 
-        function updateCounters() {
-            updateCounter(inputTextArea, inputCounter);
-            updateCounter(outputTextArea, outputCounter);
+        function syncText(){
+            let i=document.getElementById('input'),o=document.getElementById('output');
+            o.value=i.value;
+            updateCounts(i,document.getElementById('inputWordCount'),document.getElementById('inputCharCount'));
+            updateCounts(o,document.getElementById('outputWordCount'),document.getElementById('outputCharCount'));
+            toggleButtons();
         }
 
-        function updateCounter(textArea, counterElement) {
-            const text = textArea.value;
-            const charCount = text.length;
-            const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0;
-            counterElement.textContent = `Characters: ${charCount} | Words: ${wordCount}`;
+        function toggleButtons(){
+            let t=document.getElementById('input').value,h=!!t.length,
+                c=Object.keys(contractions).some(k=>new RegExp(`\\b${k}\\b`,'i').test(t));
+            ['copyBtn','resetBtn','revertBtn','addContractionBtn'].forEach(b=>document.getElementById(b).disabled=!h);
+            document.getElementById('removeBtn').disabled=!h||!c;
         }
 
-        function updateButtons() {
-            const hasOutput = outputTextArea.value.trim() !== '';
-            const isDifferent = inputTextArea.value !== outputTextArea.value;
-            
-            copyOutputButton.disabled = !hasOutput;
-            copyOutputButton.classList.toggle('btn-disabled', !hasOutput);
-            
-            revertButton.disabled = !isDifferent;
-            revertButton.classList.toggle('btn-disabled', !isDifferent);
-
-            removeContractionsButton.disabled = !hasOutput;
-            removeContractionsButton.classList.toggle('btn-disabled', !hasOutput);
-
-            addContractionsButton.disabled = !hasOutput;
-            addContractionsButton.classList.toggle('btn-disabled', !hasOutput);
+        function copyText(){
+            navigator.clipboard.writeText(document.getElementById('output').value);
+            showStatus('Text copied!');
         }
 
-        function showConfirmation(element, message, isError = false) {
-            element.textContent = message;
-            element.style.opacity = '1';
-            element.classList.toggle('confirmation-error', isError);
-            element.classList.toggle('confirmation-success', !isError);
-            setTimeout(() => {
-                element.style.opacity = '0';
-            }, 2000);
-        }
-
-        // Contractions functions
-        function removeContractions(text) {
-            return text.replace(/\b(can't|won't|ain't|\w+n't|\w+'(?:m|s|ve|re|ll|d))\b/gi, match => {
-                const lowerMatch = match.toLowerCase();
-                const replacement = Object.keys(contractions).find(key => 
-                    contractions[key].toLowerCase() === lowerMatch
-                );
-                return replacement ? 
-                    (match[0] === match[0].toUpperCase() 
-                        ? replacement[0].toUpperCase() + replacement.slice(1)
-                        : replacement) : 
-                    match;
-            });
-        }
-
-        function addContractions(text) {
-            let processedText = text;
-            Object.entries(contractions).forEach(([expanded, contracted]) => {
-                const regex = new RegExp(`\\b${expanded}\\b`, 'gi');
-                processedText = processedText.replace(regex, match => 
-                    match[0] === match[0].toUpperCase() 
-                        ? contracted[0].toUpperCase() + contracted.slice(1)
-                        : contracted
-                );
-            });
-            return processedText;
-        }
-
-        // Event Listeners
-        inputTextArea.addEventListener('input', syncText);
-
-        clearButton.addEventListener('click', () => {
-            inputTextArea.value = '';
+        function resetText(){
+            document.getElementById('input').value='';
             syncText();
-        });
+            showStatus('Text reset!');
+        }
 
-        copyOutputButton.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(outputTextArea.value);
-                showConfirmation(outputCopyConfirmation, 'Copied!');
-            } catch {
-                showConfirmation(outputCopyConfirmation, 'Failed to copy', true);
-            }
-        });
+        function removeContractions(){
+            let o=document.getElementById('output'),t=o.value;
+            Object.keys(contractions).forEach(k=>{
+                t=t.replace(new RegExp(`\\b${k}\\b`,'gi'),m=>{
+                    let e=contractions[k.toLowerCase()];
+                    return m===m.toUpperCase()?e.toUpperCase():
+                        m[0]===m[0].toUpperCase()?e[0].toUpperCase()+e.slice(1):e;
+                });
+            });
+            o.value=t;
+            updateCounts(o,document.getElementById('outputWordCount'),document.getElementById('outputCharCount'));
+            showStatus('Contractions removed!');
+            toggleButtons();
+        }
 
-        revertButton.addEventListener('click', () => {
-            outputTextArea.value = inputTextArea.value;
-            updateCounters();
-            updateButtons();
-            showConfirmation(processConfirmation, 'Reverted!');
-        });
+        function revertText(){
+            let i=document.getElementById('input'),o=document.getElementById('output');
+            o.value=i.value;
+            updateCounts(o,document.getElementById('outputWordCount'),document.getElementById('outputCharCount'));
+            showStatus('Text reverted!');
+        }
 
-        removeContractionsButton.addEventListener('click', () => {
-            outputTextArea.value = removeContractions(outputTextArea.value);
-            updateCounters();
-            updateButtons();
-            showConfirmation(processConfirmation, 'Contractions Removed!');
-        });
+        function addContraction(){
+            let c=prompt('Contraction (e.g. "don\'t"):'),e=prompt('Expansion (e.g. "do not"):');
+            if(c&&e){contractions[c.toLowerCase()]=e;showStatus('Contraction added!');toggleButtons();}
+        }
 
-        addContractionsButton.addEventListener('click', () => {
-            outputTextArea.value = addContractions(outputTextArea.value);
-            updateCounters();
-            updateButtons();
-            showConfirmation(processConfirmation, 'Contractions Added!');
-        });
-
-        // Initialize
-        syncText();
+        function showStatus(m){
+            let s=document.getElementById('status');
+            s.textContent=m;
+            s.classList.add('visible');
+            setTimeout(()=>s.classList.remove('visible'),2000);
+        }
     </script>
 </body>
 </html>
