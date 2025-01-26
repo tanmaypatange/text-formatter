@@ -21,7 +21,7 @@
             flex: 1;
             min-width: 300px;
         }
-        textarea {
+        .editable, .output {
             width: 100%;
             height: 200px;
             padding: 10px;
@@ -29,6 +29,9 @@
             border: 2px solid #ccc;
             border-radius: 4px;
             resize: vertical;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            background-color: white;
         }
         .count {
             color: #666;
@@ -56,6 +59,20 @@
         .visible {
             opacity: 1;
         }
+        .added {
+            background-color: #90EE90;
+            padding: 2px;
+            border-radius: 3px;
+        }
+        .removed {
+            background-color: #FFB6C1;
+            text-decoration: line-through;
+            padding: 2px;
+            border-radius: 3px;
+        }
+        .compare-active {
+            background-color: #2196F3;
+        }
     </style>
 </head>
 <body>
@@ -63,7 +80,7 @@
     <div class="container">
         <div class="text-box">
             <h2>Input (Editable)</h2>
-            <textarea id="input" oninput="syncText()"></textarea>
+            <div id="input" class="editable" contenteditable="true" oninput="syncText()"></div>
             <div class="count">
                 Words: <span id="inputWordCount">0</span> | 
                 Characters: <span id="inputCharCount">0</span>
@@ -72,7 +89,7 @@
         
         <div class="text-box">
             <h2>Output (Locked)</h2>
-            <textarea id="output" readonly></textarea>
+            <div id="output" class="output"></div>
             <div class="count">
                 Words: <span id="outputWordCount">0</span> | 
                 Characters: <span id="outputCharCount">0</span>
@@ -86,10 +103,76 @@
         <button id="removeBtn" onclick="removeContractions()" disabled>Remove Contractions</button>
         <button id="addBtn" onclick="addContractions()" disabled>Add Contractions</button>
         <button id="revertBtn" onclick="revertText()" disabled>Revert</button>
+        <button id="compareBtn" onclick="toggleComparison()" disabled>Compare Text</button>
         <span id="status" class="status"></span>
     </div>
 
     <script>
+        const Diff = (function() {
+            function diffWords(oldStr, newStr) {
+                const split = str => str.split(/(\s+|\b|\W+)/).filter(x => x);
+                return diff(split(oldStr), split(newStr));
+            }
+
+            function diff(oldArr, newArr) {
+                let o = 0, n = 0, changes = [];
+                while (o < oldArr.length && n < newArr.length) {
+                    if (oldArr[o] === newArr[n]) {
+                        changes.push({ value: oldArr[o], added: false, removed: false });
+                        o++;
+                        n++;
+                    } else {
+                        let lookAhead = 1;
+                        let found = false;
+                        while (o + lookAhead < oldArr.length) {
+                            if (oldArr[o + lookAhead] === newArr[n]) {
+                                found = true;
+                                break;
+                            }
+                            lookAhead++;
+                        }
+                        if (found) {
+                            while (lookAhead-- > 0) {
+                                changes.push({ value: oldArr[o], removed: true });
+                                o++;
+                            }
+                            continue;
+                        }
+                        lookAhead = 1;
+                        while (n + lookAhead < newArr.length) {
+                            if (newArr[n + lookAhead] === oldArr[o]) {
+                                found = true;
+                                break;
+                            }
+                            lookAhead++;
+                        }
+                        if (found) {
+                            while (lookAhead-- > 0) {
+                                changes.push({ value: newArr[n], added: true });
+                                n++;
+                            }
+                            continue;
+                        }
+                        changes.push({ value: oldArr[o], removed: true });
+                        changes.push({ value: newArr[n], added: true });
+                        o++;
+                        n++;
+                    }
+                }
+                while (o < oldArr.length) {
+                    changes.push({ value: oldArr[o], removed: true });
+                    o++;
+                }
+                while (n < newArr.length) {
+                    changes.push({ value: newArr[n], added: true });
+                    n++;
+                }
+                return changes;
+            }
+
+            return { diffWords };
+        })();
+
         const contractions = {
             "how're": "how are",
             "how's": "how is",
@@ -103,33 +186,76 @@
             "they're": "they are",
             "you're": "you are",
             "we're": "we are",
-            "ain't": "am not", "aren't": "are not", "can't": "cannot",
-            "could've": "could have", "couldn't": "could not", "didn't": "did not",
-            "doesn't": "does not", "don't": "do not", "hadn't": "had not",
-            "hasn't": "has not", "haven't": "have not", "he'd": "he would",
-            "he'll": "he will", "he's": "he is", "how'd": "how did",
-            "how'll": "how will", "I'd": "I would", "I'll": "I will",
-            "I'm": "I am", "I've": "I have", "isn't": "is not",
-            "it's": "it is", "let's": "let us", "might've": "might have",
-            "must've": "must have", "mustn't": "must not", "needn't": "need not",
-            "oughtn't": "ought not", "shan't": "shall not", "she'd": "she would",
-            "she'll": "she will", "she's": "she is", "should've": "should have",
-            "shouldn't": "should not", "that's": "that is", "there's": "there is",
-            "they'd": "they would", "they'll": "they will", "they've": "they have",
-            "wasn't": "was not", "we'd": "we would", "we'll": "we will",
-            "we've": "we have", "weren't": "were not", "what'll": "what will",
-            "what's": "what is", "what've": "what have", "where'd": "where did",
-            "where's": "where is", "who'd": "who would", "who'll": "who will",
-            "who's": "who is", "why'd": "why did", "why'll": "why will",
-            "why's": "why is", "won't": "will not", "would've": "would have",
-            "wouldn't": "would not", "y'all": "you all", "you'd": "you would",
-            "you'll": "you will", "you've": "you have"
+            "ain't": "am not", 
+            "aren't": "are not", 
+            "can't": "cannot",
+            "could've": "could have", 
+            "couldn't": "could not", 
+            "didn't": "did not",
+            "doesn't": "does not", 
+            "don't": "do not", 
+            "hadn't": "had not",
+            "hasn't": "has not", 
+            "haven't": "have not", 
+            "he'd": "he would",
+            "he'll": "he will", 
+            "he's": "he is", 
+            "how'd": "how did",
+            "how'll": "how will", 
+            "I'd": "I would", 
+            "I'll": "I will",
+            "I'm": "I am", 
+            "I've": "I have", 
+            "isn't": "is not",
+            "it's": "it is", 
+            "let's": "let us", 
+            "might've": "might have",
+            "must've": "must have", 
+            "mustn't": "must not", 
+            "needn't": "need not",
+            "oughtn't": "ought not", 
+            "shan't": "shall not", 
+            "she'd": "she would",
+            "she'll": "she will", 
+            "she's": "she is", 
+            "should've": "should have",
+            "shouldn't": "should not", 
+            "that's": "that is", 
+            "there's": "there is",
+            "they'd": "they would", 
+            "they'll": "they will", 
+            "they've": "they have",
+            "wasn't": "was not", 
+            "we'd": "we would", 
+            "we'll": "we will",
+            "we've": "we have", 
+            "weren't": "were not", 
+            "what'll": "what will",
+            "what's": "what is", 
+            "what've": "what have", 
+            "where'd": "where did",
+            "where's": "where is", 
+            "who'd": "who would", 
+            "who'll": "who will",
+            "who's": "who is", 
+            "why'd": "why did", 
+            "why'll": "why will",
+            "why's": "why is", 
+            "won't": "will not", 
+            "would've": "would have",
+            "wouldn't": "would not", 
+            "y'all": "you all", 
+            "you'd": "you would",
+            "you'll": "you will", 
+            "you've": "you have"
         };
 
         let originalText = "";
         let currentText = "";
+        let isComparing = false;
+        let lastRawInput = "";
+        let lastRawOutput = "";
 
-        // Case preservation helpers
         const preserveCase = (source, target) => {
             if (source === source.toUpperCase()) return target.toUpperCase();
             if (source[0] === source[0].toUpperCase()) return target.charAt(0).toUpperCase() + target.slice(1);
@@ -137,7 +263,7 @@
         };
 
         function updateCounts(textElement, wordSpan, charSpan) {
-            const text = textElement.value;
+            const text = textElement.textContent;
             const words = text.trim().split(/\s+/).filter(word => word.length > 0);
             wordSpan.textContent = text ? words.length : 0;
             charSpan.textContent = text.length;
@@ -146,9 +272,11 @@
         function syncText() {
             const input = document.getElementById('input');
             const output = document.getElementById('output');
-            originalText = input.value;
+            originalText = input.textContent;
             currentText = originalText;
-            output.value = originalText;
+            output.textContent = originalText;
+            lastRawInput = originalText;
+            lastRawOutput = originalText;
             
             updateCounts(input, 
                 document.getElementById('inputWordCount'), 
@@ -159,81 +287,142 @@
                 document.getElementById('outputCharCount'));
 
             toggleButtons();
+            if(isComparing) stopComparison();
         }
 
         function toggleButtons() {
             const hasText = originalText.length > 0;
             const inputHasContractions = Object.keys(contractions).some(c => 
-                new RegExp(`\\b${c}\\b`, 'i').test(currentText)
+                new RegExp(`\\b${c}\\b`, 'i').test(lastRawInput)
             );
             const outputHasExpansions = Object.values(contractions).some(e => 
-                new RegExp(`\\b${e}\\b`, 'i').test(currentText)
+                new RegExp(`\\b${e}\\b`, 'i').test(lastRawOutput)
             );
 
             document.getElementById('removeBtn').disabled = !hasText || !inputHasContractions;
             document.getElementById('addBtn').disabled = !hasText || !outputHasExpansions;
             document.getElementById('copyBtn').disabled = !hasText;
             document.getElementById('resetBtn').disabled = !hasText;
-            document.getElementById('revertBtn').disabled = !hasText || (output.value === originalText);
+            document.getElementById('revertBtn').disabled = !hasText || (lastRawOutput === originalText);
+            document.getElementById('compareBtn').disabled = !hasText;
+            document.getElementById('compareBtn').textContent = isComparing ? 'Stop Comparison' : 'Compare Text';
+            document.getElementById('compareBtn').classList.toggle('compare-active', isComparing);
         }
 
         function copyText() {
-            navigator.clipboard.writeText(document.getElementById('output').value);
+            navigator.clipboard.writeText(lastRawOutput);
             showStatus('Text copied!');
         }
 
         function resetText() {
-            document.getElementById('input').value = '';
+            document.getElementById('input').textContent = '';
             syncText();
             showStatus('Text reset!');
         }
 
         function removeContractions() {
             const output = document.getElementById('output');
-            currentText = originalText;
+            let workingText = lastRawInput;
             
-            Object.entries(contractions).forEach(([contraction, expansion]) => {
+            // Process longer contractions first to prevent partial replacements
+            Object.entries(contractions).sort((a, b) => b[0].length - a[0].length).forEach(([contraction, expansion]) => {
                 const regex = new RegExp(`\\b${contraction}\\b`, 'gi');
-                currentText = currentText.replace(regex, match => 
+                workingText = workingText.replace(regex, match => 
                     preserveCase(match, expansion)
                 );
             });
             
-            output.value = currentText;
+            lastRawOutput = workingText;
+            output.textContent = workingText;
             updateCounts(output, 
                 document.getElementById('outputWordCount'), 
                 document.getElementById('outputCharCount'));
             showStatus('Contractions removed!');
+            if(isComparing) stopComparison();
             toggleButtons();
         }
 
         function addContractions() {
             const output = document.getElementById('output');
-            currentText = output.value;
+            let workingText = lastRawOutput;
             
-            Object.entries(contractions).forEach(([contraction, expansion]) => {
+            // Process longer expansions first to prevent partial replacements
+            Object.entries(contractions).sort((a, b) => b[1].length - a[1].length).forEach(([contraction, expansion]) => {
                 const regex = new RegExp(`\\b${expansion}\\b`, 'gi');
-                currentText = currentText.replace(regex, match => 
+                workingText = workingText.replace(regex, match => 
                     preserveCase(match, contraction)
                 );
             });
             
-            output.value = currentText;
+            lastRawOutput = workingText;
+            output.textContent = workingText;
             updateCounts(output, 
                 document.getElementById('outputWordCount'), 
                 document.getElementById('outputCharCount'));
             showStatus('Contractions added!');
+            if(isComparing) stopComparison();
             toggleButtons();
         }
 
         function revertText() {
             const output = document.getElementById('output');
-            output.value = originalText;
-            currentText = originalText;
+            lastRawOutput = originalText;
+            output.textContent = originalText;
             updateCounts(output, 
                 document.getElementById('outputWordCount'), 
                 document.getElementById('outputCharCount'));
             showStatus('Text reverted!');
+            if(isComparing) stopComparison();
+            toggleButtons();
+        }
+
+        function toggleComparison() {
+            if(isComparing) {
+                stopComparison();
+            } else {
+                startComparison();
+            }
+        }
+
+        function startComparison() {
+            const input = document.getElementById('input');
+            const output = document.getElementById('output');
+            
+            lastRawInput = input.textContent;
+            lastRawOutput = output.textContent;
+
+            const diffs = Diff.diffWords(lastRawInput, lastRawOutput);
+
+            let inputHtml = '';
+            let outputHtml = '';
+
+            diffs.forEach(part => {
+                if (part.added) {
+                    outputHtml += `<span class="added">${part.value}</span>`;
+                } else if (part.removed) {
+                    inputHtml += `<span class="removed">${part.value}</span>`;
+                } else {
+                    inputHtml += part.value;
+                    outputHtml += part.value;
+                }
+            });
+
+            input.innerHTML = inputHtml;
+            output.innerHTML = outputHtml;
+            isComparing = true;
+            showStatus('Differences highlighted!');
+            toggleButtons();
+        }
+
+        function stopComparison() {
+            const input = document.getElementById('input');
+            const output = document.getElementById('output');
+            
+            input.textContent = lastRawInput;
+            output.textContent = lastRawOutput;
+            
+            isComparing = false;
+            showStatus('Comparison stopped!');
             toggleButtons();
         }
 
